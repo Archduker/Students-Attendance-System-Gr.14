@@ -430,4 +430,4 @@ python main.py
 
 ## 👨‍💻 Nhóm phát triển
 
-**Group 14** - Đại học UTH
+**Group 14** - SE - k24 -  UTH
