@@ -121,5 +121,3 @@ secrets.json
 credentials.json
 *.pem
 *.key
-
-tasks.md
