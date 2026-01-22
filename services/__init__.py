@@ -25,10 +25,12 @@ from .auth_service import AuthService
 from .security_service import SecurityService
 from .qr_service import QRService
 from .email_service import EmailService
+from .student_service import StudentService
 
 __all__ = [
     "AuthService",
     "SecurityService", 
     "QRService",
     "EmailService",
+    "StudentService",
 ]

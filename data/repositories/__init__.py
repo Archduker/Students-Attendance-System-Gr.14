@@ -26,10 +26,14 @@ from .user_repository import UserRepository
 from .classroom_repository import ClassroomRepository
 from .attendance_repository import AttendanceSessionRepository, AttendanceRecordRepository
 
+# Alias for compatibility
+ClassRepository = ClassroomRepository
+
 __all__ = [
     "BaseRepository",
     "UserRepository",
     "ClassroomRepository",
+    "ClassRepository",  # Alias
     "AttendanceSessionRepository",
     "AttendanceRecordRepository",
 ]
