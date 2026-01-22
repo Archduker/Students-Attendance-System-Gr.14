@@ -120,8 +120,49 @@ def run_gui(app_config: dict):
         # app = App(root, app_config["controllers"])
         
         from views.pages.auth.login_page import LoginPage
-        LoginPage(root)
-
+        from views.pages.auth.reset_password_page import ResetPasswordPage
+        
+        # Get auth controller from app config
+        auth_controller = app_config["controllers"]["auth"]
+        
+        # Current page container
+        current_page = [None]
+        
+        def show_login():
+            """Hiển thị trang login."""
+            if current_page[0]:
+                current_page[0].destroy()
+            current_page[0] = LoginPage(
+                root, 
+                auth_controller=auth_controller,
+                on_login_success=on_login_success,
+                on_forgot_password=show_reset_password
+            )
+        
+        def show_reset_password():
+            """Hiển thị trang reset password."""
+            if current_page[0]:
+                current_page[0].destroy()
+            current_page[0] = ResetPasswordPage(
+                root,
+                auth_controller=auth_controller,
+                on_back_to_login=show_login
+            )
+        
+        def on_login_success(user, remember_me):
+            """Callback khi login thành công."""
+            print(f"✅ Đăng nhập thành công: {user.full_name} ({user.role.value})")
+            print(f"   Remember me: {remember_me}")
+            # TODO: Navigate to dashboard based on role
+            # For now, just show a message
+            import tkinter.messagebox as messagebox
+            messagebox.showinfo(
+                "Đăng nhập thành công", 
+                f"Chào mừng {user.full_name}!\nRole: {user.role.value}"
+            )
+        
+        # Show login page
+        show_login()
         
         # Run main loop
         print(f"🎓 {APP_NAME} đang chạy...")

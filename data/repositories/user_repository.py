@@ -42,16 +42,16 @@ class UserRepository(BaseRepository[User]):
             "password_hash": row["password_hash"],
             "full_name": row["full_name"],
             "role": role,
-            "email": row.get("email"),
+            "email": row["email"] if row["email"] else None,
         }
         
         # Tạo subclass phù hợp
         if role == UserRole.ADMIN:
-            return Admin(**base_data, admin_id=row.get("admin_id", ""))
+            return Admin(**base_data, admin_id=row["admin_id"] if row["admin_id"] else "")
         elif role == UserRole.TEACHER:
-            return Teacher(**base_data, teacher_code=row.get("teacher_code", ""))
+            return Teacher(**base_data, teacher_code=row["teacher_code"] if row["teacher_code"] else "")
         elif role == UserRole.STUDENT:
-            return Student(**base_data, student_code=row.get("student_code", ""))
+            return Student(**base_data, student_code=row["student_code"] if row["student_code"] else "")
         else:
             return User(**base_data)
     
