@@ -236,6 +236,94 @@ Một task được coi là **DONE** khi:
 
 ---
 
+## 🐳 Docker Deployment & Dev Tools
+
+> **Mục tiêu:** Cấu hình dự án để deploy và phát triển với các tools chuẩn công nghiệp
+
+### Phân công
+
+| Task | Người thực hiện | Trạng thái |
+|------|-----------------|------------|
+| Docker Configuration | Leader | 🟡 In Progress |
+| Bug Tracking Setup | Leader | ⬜ Pending |
+| VS Code Config | Leader | ⬜ Pending |
+| Test Cases Excel | Tất cả members | ⬜ Pending |
+
+---
+
+### ✅ Checklist Docker Files
+
+- [ ] **Dockerfile** - Build image cho ứng dụng Python
+  - Location: `/Dockerfile`
+  - Base image: `python:3.11-slim`
+  - Install system dependencies cho GUI libs (libzbar, OpenCV)
+
+- [ ] **docker-compose.yml** - Orchestrate services
+  - Location: `/docker-compose.yml`
+  - Services: `app`, `mantis`, `mantis-db`
+  - Ports: Mantis trên `8989`
+
+- [ ] **.dockerignore** - Loại bỏ files không cần thiết
+  - Location: `/.dockerignore`
+  - Ignore: venv, __pycache__, .git, tests, docs
+
+---
+
+### ✅ Checklist VS Code Configuration
+
+- [ ] **.vscode/settings.json** - Python settings
+  - Auto format on save
+  - Pytest enabled
+
+- [ ] **.vscode/launch.json** - Debug configurations
+  - Run App
+  - Init Database
+  - Run Tests
+
+- [ ] **.vscode/extensions.json** - Recommended extensions
+  - Python, Debugpy, Black Formatter, Docker
+
+---
+
+### ✅ Checklist Bug Tracking (Mantis)
+
+- [ ] Chạy Mantis qua Docker Compose
+- [ ] Truy cập http://localhost:8989
+- [ ] Tạo project "Student Attendance System"
+- [ ] Thêm categories: Login, Student, Teacher, Admin, General
+- [ ] Thêm tất cả members vào project
+- [ ] Tạo hướng dẫn sử dụng tại `docs/BUG_TRACKING.md`
+
+---
+
+### ✅ Checklist Test Cases (Excel)
+
+- [ ] Tạo folder `docs/test_cases/`
+- [ ] Tạo file `TEST_CASES_TEMPLATE.xlsx` với các sheets:
+  - Sheet 1: **Login Module** - Test đăng nhập, reset password
+  - Sheet 2: **Student Module** - Test điểm danh, xem lịch sử
+  - Sheet 3: **Teacher Module** - Test tạo session, QR code
+  - Sheet 4: **Admin Module** - Test CRUD users/classes
+
+---
+
+### ✅ Checklist GitHub
+
+- [ ] Tạo `.github/PULL_REQUEST_TEMPLATE.md`
+- [ ] Cập nhật README với Docker instructions
+- [ ] Thêm GitHub Actions cho CI/CD (optional)
+
+---
+
+### 📝 Hướng dẫn chi tiết
+
+Xem file **[docker_config.md](docker_config.md)** để có hướng dẫn từng bước về:
+- Cách build Docker image
+- Cách chạy Mantis Bug Tracker
+- Troubleshooting các lỗi phổ biến
+
+---
+
 ## 🔗 Resources
 
 - [CustomTkinter Docs](https://customtkinter.tomschimansky.com/)
