@@ -119,14 +119,9 @@ def run_gui(app_config: dict):
         # from views.app import App
         # app = App(root, app_config["controllers"])
         
-        # Placeholder label
-        placeholder = ctk.CTkLabel(
-            root,
-            text="🎓 Student Attendance System\n\nGUI đang được phát triển...\n\n"
-                 "Chạy 'python main.py --init-db --seed' để khởi tạo database.",
-            font=("Segoe UI", 18),
-        )
-        placeholder.place(relx=0.5, rely=0.5, anchor="center")
+        from views.pages.auth.login_page import LoginPage
+        LoginPage(root)
+
         
         # Run main loop
         print(f"🎓 {APP_NAME} đang chạy...")
