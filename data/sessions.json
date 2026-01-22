@@ -1,0 +1,38 @@
+{
+  "DrBTTIOzOX2u5OncB28sDrfRr2vVPQzx1WA5MTVypNMpVMM_ryICX_VcEqiPucAL": {
+    "user_id": 4,
+    "username": "student1",
+    "role": "STUDENT",
+    "remember_me": false,
+    "created_at": "2026-01-22T22:06:26.680817",
+    "expires_at": "2026-01-23T22:06:26.680817",
+    "last_activity": "2026-01-22T22:06:26.680817"
+  },
+  "9-yqc8uGCPqgt4BoavsA9jTTSnD1hf2W0naAH_wKRR5paSg5tCWvso443c8i9F-v": {
+    "user_id": 1,
+    "username": "admin",
+    "role": "ADMIN",
+    "remember_me": false,
+    "created_at": "2026-01-22T22:11:02.256210",
+    "expires_at": "2026-01-23T22:11:02.256210",
+    "last_activity": "2026-01-22T22:11:02.256210"
+  },
+  "IvBVlZ85hwhdnGV0VNrcU5OjpTrYHE533pmCk5kpYcLBAsg428JP__7EdjB8keF0": {
+    "user_id": 1,
+    "username": "admin",
+    "role": "ADMIN",
+    "remember_me": false,
+    "created_at": "2026-01-22T22:15:42.930939",
+    "expires_at": "2026-01-23T22:15:42.930939",
+    "last_activity": "2026-01-22T22:15:42.930939"
+  },
+  "8dceZ9bfePxN2HNzxQv1D08CbzUo_gm5oFfKMTtC8JhA_03jNBEMWDORBJkF9sRu": {
+    "user_id": 4,
+    "username": "student1",
+    "role": "STUDENT",
+    "remember_me": false,
+    "created_at": "2026-01-22T22:15:53.800671",
+    "expires_at": "2026-01-23T22:15:53.800671",
+    "last_activity": "2026-01-22T22:15:53.800671"
+  }
+}

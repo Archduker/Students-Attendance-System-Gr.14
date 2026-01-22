@@ -144,7 +144,21 @@ class ResetPasswordPage(ctk.CTkFrame):
             corner_radius=RADIUS["md"],
             command=self._handle_reset
         )
-        self.reset_btn.pack(pady=(SPACING["sm"], SPACING["xl"]))
+        self.reset_btn.pack(pady=(SPACING["sm"], SPACING["md"]))
+        
+        # Back to login button
+        self.back_to_login_btn = ctk.CTkButton(
+            self.form_frame,
+            text="← Quay lại trang đăng nhập",
+            font=(FONTS["family"], FONTS["size_sm"]),
+            text_color=COLORS.get("text_secondary", "#6B7280"),
+            fg_color="transparent",
+            hover_color=COLORS.get("bg_tertiary", "#374151"),
+            width=300,
+            height=36,
+            command=self._handle_back
+        )
+        self.back_to_login_btn.pack(pady=(0, SPACING["xl"]))
         
         # Footer
         self.footer_label = ctk.CTkLabel(

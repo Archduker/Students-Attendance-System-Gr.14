@@ -48,7 +48,7 @@ def create_app():
     # Import dependencies
     from data.database import Database
     from data.repositories import UserRepository
-    from services import SecurityService, EmailService, AuthService
+    from services import SecurityService, EmailService, AuthService, SessionService
     from controllers import AuthController
     
     # Initialize database
@@ -59,8 +59,9 @@ def create_app():
     
     # Initialize services
     security_service = SecurityService()
+    session_service = SessionService(security_service)
     email_service = EmailService()
-    auth_service = AuthService(user_repo, security_service, email_service)
+    auth_service = AuthService(user_repo, security_service, session_service, email_service)
     
     # Initialize controllers
     auth_controller = AuthController(auth_service)
@@ -227,3 +228,4 @@ Examples:
 
 if __name__ == "__main__":
     main()
+

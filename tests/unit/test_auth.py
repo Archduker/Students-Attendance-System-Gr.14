@@ -129,11 +129,16 @@ class TestAuthService:
         return Mock()
     
     @pytest.fixture
-    def auth_service(self, mock_user_repo, mock_security, mock_email):
-        """AuthService với mocked dependencies."""
-        return AuthService(mock_user_repo, mock_security, mock_email)
+    def session_service(self):
+        """Mock SessionService."""
+        return Mock()
     
-    def test_login_success(self, auth_service, mock_user_repo, mock_security):
+    @pytest.fixture
+    def auth_service(self, mock_user_repo, mock_security, session_service, mock_email):
+        """AuthService với mocked dependencies."""
+        return AuthService(mock_user_repo, mock_security, session_service, mock_email)
+    
+    def test_login_success(self, auth_service, mock_user_repo, mock_security, session_service):
         """Login thành công với credentials đúng."""
         # Setup
         mock_user = Mock()
@@ -144,15 +149,18 @@ class TestAuthService:
         
         mock_user_repo.find_by_username.return_value = mock_user
         mock_security.verify_password.return_value = True
+        session_service.create_session.return_value = "mock_token"
         
         # Execute
-        result = auth_service.login("testuser", "password123")
+        user, token = auth_service.login("testuser", "password123")
         
         # Verify
-        assert result == mock_user
+        assert user == mock_user
+        assert token == "mock_token"
         assert auth_service.get_current_user() == mock_user
         mock_user_repo.find_by_username.assert_called_once_with("testuser")
         mock_security.verify_password.assert_called_once_with("password123", "hashed_password")
+        session_service.create_session.assert_called_once()
     
     def test_login_user_not_found(self, auth_service, mock_user_repo):
         """Login thất bại khi user không tồn tại."""
@@ -172,13 +180,14 @@ class TestAuthService:
         with pytest.raises(InvalidCredentialsError):
             auth_service.login("testuser", "wrong_password")
     
-    def test_logout(self, auth_service, mock_user_repo, mock_security):
+    def test_logout(self, auth_service, mock_user_repo, mock_security, session_service):
         """Logout phải clear current user."""
         # Login first
         mock_user = Mock()
         mock_user.password_hash = "hash"
         mock_user_repo.find_by_username.return_value = mock_user
         mock_security.verify_password.return_value = True
+        session_service.create_session.return_value = "token"
         
         auth_service.login("user", "pass")
         assert auth_service.is_authenticated() is True
@@ -189,12 +198,13 @@ class TestAuthService:
         assert auth_service.is_authenticated() is False
         assert auth_service.get_current_user() is None
     
-    def test_is_authenticated_true(self, auth_service, mock_user_repo, mock_security):
+    def test_is_authenticated_true(self, auth_service, mock_user_repo, mock_security, session_service):
         """is_authenticated trả về True khi đã login."""
         mock_user = Mock()
         mock_user.password_hash = "hash"
         mock_user_repo.find_by_username.return_value = mock_user
         mock_security.verify_password.return_value = True
+        session_service.create_session.return_value = "token"
         
         auth_service.login("user", "pass")
         

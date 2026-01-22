@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 import json
 from pathlib import Path
 
-from services.security_service import SecurityService
+from .security_service import SecurityService
 
 
 class SessionService:

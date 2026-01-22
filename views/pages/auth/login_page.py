@@ -84,27 +84,52 @@ class LoginPage(ctk.CTkFrame):
         )
         self.form_frame.pack(padx=SPACING["xl"], pady=SPACING["md"])
         
-        # Username label
-        self.username_label = ctk.CTkLabel(
+        # Role selector label
+        self.role_label = ctk.CTkLabel(
             self.form_frame,
-            text="Tên đăng nhập",
+            text="Vai trò",
             font=(FONTS["family"], FONTS["size_sm"]),
             text_color=COLORS.get("text_secondary", "#6B7280"),
             anchor="w"
         )
-        self.username_label.pack(fill="x", pady=(0, SPACING["xs"]))
+        self.role_label.pack(fill="x", pady=(0, SPACING["xs"]))
         
-        # Username entry
-        self.username_entry = ctk.CTkEntry(
+        # Role selector (segmented button)
+        self.role_var = ctk.StringVar(value="STUDENT")
+        self.role_selector = ctk.CTkSegmentedButton(
             self.form_frame,
-            placeholder_text="Nhập username...",
+            values=["ADMIN", "TEACHER", "STUDENT"],
+            variable=self.role_var,
+            font=(FONTS["family"], FONTS["size_sm"]),
+            width=300,
+            height=36
+        )
+        self.role_selector.pack(pady=(0, SPACING["md"]))
+        
+        # Set callback to auto-fill username when role changes
+        self.role_selector.configure(command=self._on_role_change)
+        
+        # Email label (text will change based on role)
+        self.email_label = ctk.CTkLabel(
+            self.form_frame,
+            text="University email",
+            font=(FONTS["family"], FONTS["size_sm"]),
+            text_color=COLORS.get("text_secondary", "#6B7280"),
+            anchor="w"
+        )
+        self.email_label.pack(fill="x", pady=(0, SPACING["xs"]))
+        
+        # Email entry
+        self.email_entry = ctk.CTkEntry(
+            self.form_frame,
+            placeholder_text="name@ut.edu.vn",
             width=300,
             height=40,
             corner_radius=RADIUS["md"],
             font=(FONTS["family"], FONTS["size_base"])
         )
-        self.username_entry.pack(pady=(0, SPACING["md"]))
-        self.username_entry.bind("<Return>", lambda e: self.password_entry.focus())
+        self.email_entry.pack(pady=(0, SPACING["md"]))
+        self.email_entry.bind("<Return>", lambda e: self.password_entry.focus())
         
         # Password label
         self.password_label = ctk.CTkLabel(
@@ -197,8 +222,21 @@ class LoginPage(ctk.CTkFrame):
         )
         self.footer_label.pack(pady=(0, SPACING["lg"]))
         
-        # Focus on username entry
-        self.username_entry.focus()
+        # Focus on email entry
+        self.email_entry.focus()
+    
+    def _on_role_change(self, role: str):
+        """
+        Callback khi role thay đổi - cập nhật label email theo role.
+        
+        Args:
+            role: Role được chọn (ADMIN, TEACHER, STUDENT)
+        """
+        # Cập nhật label email dựa trên role
+        if role == "ADMIN":
+            self.email_label.configure(text="Admin email")
+        else:  # TEACHER or STUDENT
+            self.email_label.configure(text="University email")
     
     def _validate_form(self) -> tuple[bool, str]:
         """
@@ -211,13 +249,13 @@ class LoginPage(ctk.CTkFrame):
         password = self.password_entry.get()
         
         if not username:
-            return False, "Vui lòng nhập tên đăng nhập"
+            return False, "Vui lòng nhập email"
         
         if not password:
             return False, "Vui lòng nhập mật khẩu"
         
         if len(username) < 3:
-            return False, "Tên đăng nhập phải có ít nhất 3 ký tự"
+            return False, "Email phải có ít nhất 3 ký tự"
         
         return True, ""
     
@@ -253,7 +291,7 @@ class LoginPage(ctk.CTkFrame):
         # Nếu không có controller, hiển thị thông báo
         if not self.auth_controller:
             self._show_error("AuthController chưa được kết nối")
-            print(f"[DEBUG] Login attempt: {username} / {'*' * len(password)}")
+            print(f"[DEBUG] Login attempt: {email} / {'*' * len(password)}")
             print(f"[DEBUG] Remember me: {remember}")
             return
         
@@ -262,7 +300,7 @@ class LoginPage(ctk.CTkFrame):
         
         try:
             # Gọi auth controller
-            result = self.auth_controller.handle_login(username, password)
+            result = self.auth_controller.handle_login(email, password)
             
             if result["success"]:
                 print(f"✅ Login success: {result['user'].full_name} ({result['role']})")

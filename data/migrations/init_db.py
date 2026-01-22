@@ -85,16 +85,16 @@ def seed_demo_data() -> None:
         # === INSERT USERS ===
         users_data = [
             # Admin
-            ("admin", default_password, "Admin System", "admin@school.edu.vn", "ADMIN", "AD001", None, None),
+            ("admin", default_password, "Admin System", "admin@ut.edu.vn", "ADMIN", "AD001", None, None),
             # Teachers
-            ("teacher1", default_password, "Nguyễn Văn A", "teacher1@school.edu.vn", "TEACHER", None, "GV001", None),
-            ("teacher2", default_password, "Trần Thị B", "teacher2@school.edu.vn", "TEACHER", None, "GV002", None),
+            ("teacher1", default_password, "Nguyễn Văn A", "teacher1@ut.edu.vn", "TEACHER", None, "GV001", None),
+            ("teacher2", default_password, "Trần Thị B", "teacher2@ut.edu.vn", "TEACHER", None, "GV002", None),
             # Students
-            ("student1", default_password, "Lê Văn C", "student1@school.edu.vn", "STUDENT", None, None, "SV001"),
-            ("student2", default_password, "Phạm Thị D", "student2@school.edu.vn", "STUDENT", None, None, "SV002"),
-            ("student3", default_password, "Hoàng Văn E", "student3@school.edu.vn", "STUDENT", None, None, "SV003"),
-            ("student4", default_password, "Ngô Thị F", "student4@school.edu.vn", "STUDENT", None, None, "SV004"),
-            ("student5", default_password, "Vũ Văn G", "student5@school.edu.vn", "STUDENT", None, None, "SV005"),
+            ("student1", default_password, "Lê Văn C", "student1@ut.edu.vn", "STUDENT", None, None, "SV001"),
+            ("student2", default_password, "Phạm Thị D", "student2@ut.edu.vn", "STUDENT", None, None, "SV002"),
+            ("student3", default_password, "Hoàng Văn E", "student3@ut.edu.vn", "STUDENT", None, None, "SV003"),
+            ("student4", default_password, "Ngô Thị F", "student4@ut.edu.vn", "STUDENT", None, None, "SV004"),
+            ("student5", default_password, "Vũ Văn G", "student5@ut.edu.vn", "STUDENT", None, None, "SV005"),
         ]
         
         cursor.executemany("""
