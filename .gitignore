@@ -80,6 +80,7 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
+tests/
 
 # =============================================================================
 # Documentation
