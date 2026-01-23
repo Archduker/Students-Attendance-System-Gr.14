@@ -32,21 +32,22 @@ class AuthController:
         """
         self.auth_service = auth_service
     
-    def handle_login(self, username: str, password: str) -> Dict[str, Any]:
+    def handle_login(self, username: str, password: str, remember_me: bool = False) -> Dict[str, Any]:
         """
         Xử lý login request.
         
         Args:
             username: Tên đăng nhập
             password: Mật khẩu
+            remember_me: Ghi nhớ đăng nhập
             
         Returns:
-            Dict với keys: success, user/error, role
+            Dict với keys: success, user/error, role, token
             
         Example:
             >>> result = controller.handle_login("admin", "123456")
             >>> result
-            {"success": True, "user": User(...), "role": "ADMIN"}
+            {"success": True, "token": "...", "role": "ADMIN"}
         """
         # Validate input
         if not username or not username.strip():
@@ -62,11 +63,18 @@ class AuthController:
             }
         
         try:
-            user = self.auth_service.login(username.strip(), password)
+            # Login and get token
+            user, token = self.auth_service.login(
+                username.strip(), 
+                password,
+                remember_me
+            )
+            
             return {
                 "success": True,
                 "user": user,
-                "role": user.role.value
+                "role": user.role.value,
+                "token": token
             }
         except InvalidCredentialsError as e:
             return {

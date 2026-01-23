@@ -15,24 +15,19 @@ from core.models import User
 from core.exceptions import InvalidCredentialsError, UnauthorizedError
 from data.repositories import UserRepository
 from .security_service import SecurityService
-from .email_service import EmailService
-
+from .session_service import SessionService
 
 class AuthService:
     """
     Service xử lý authentication và authorization.
-    
-    Example:
-        >>> auth = AuthService(user_repo, security, email)
-        >>> user = auth.login("admin", "123456")
-        >>> auth.reset_password("user@email.com")
     """
     
     def __init__(
         self,
         user_repo: UserRepository,
         security_service: SecurityService,
-        email_service: Optional[EmailService] = None
+        session_service: SessionService,
+        email_service: Optional[object] = None
     ):
         """
         Khởi tạo AuthService.
@@ -40,31 +35,29 @@ class AuthService:
         Args:
             user_repo: UserRepository instance
             security_service: SecurityService instance
+            session_service: SessionService instance
             email_service: EmailService instance (optional)
         """
         self.user_repo = user_repo
         self.security = security_service
+        self.session = session_service
         self.email = email_service
         self._current_user: Optional[User] = None
     
-    def login(self, username: str, password: str) -> User:
+    def login(self, username: str, password: str, remember_me: bool = False) -> Tuple[User, str]:
         """
         Đăng nhập vào hệ thống.
         
         Args:
             username: Tên đăng nhập
             password: Mật khẩu
+            remember_me: Ghi nhớ đăng nhập
             
         Returns:
-            User object nếu đăng nhập thành công
+            Tuple (User object, session_token)
             
         Raises:
             InvalidCredentialsError: Nếu thông tin không đúng
-            
-        Example:
-            >>> user = auth.login("admin", "123456")
-            >>> print(user.role)
-            UserRole.ADMIN
         """
         # Tìm user
         user = self.user_repo.find_by_username(username)
@@ -79,7 +72,15 @@ class AuthService:
         # Lưu current user
         self._current_user = user
         
-        return user
+        # Create session
+        token = self.session.create_session(
+            user_id=user.user_id,
+            username=user.username,
+            role=user.role.value,
+            remember_me=remember_me
+        )
+        
+        return user, token
     
     def logout(self) -> None:
         """Đăng xuất khỏi hệ thống."""

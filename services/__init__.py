@@ -11,6 +11,8 @@ Package chứa các service classes:
 - qr_service.py: QR code generation
 - email_service.py: Email sending
 - security_service.py: Password hashing, tokens
+- student_service.py: Student operations
+- session_service.py: Session management
 
 Services chứa business logic, gọi repositories để truy cập data.
 
@@ -26,6 +28,7 @@ from .security_service import SecurityService
 from .qr_service import QRService
 from .email_service import EmailService
 from .student_service import StudentService
+from .session_service import SessionService
 
 __all__ = [
     "AuthService",
@@ -33,4 +36,5 @@ __all__ = [
     "QRService",
     "EmailService",
     "StudentService",
+    "SessionService",
 ]
