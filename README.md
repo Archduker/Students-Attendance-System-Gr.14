@@ -431,3 +431,32 @@ python main.py
 ## 👨‍💻 Nhóm phát triển
 
 **Group 14** - SE - k24 -  UTH
+
+
+### 👨‍🏫 MEMBER 3: `feature/teacher-module`
+
+**Mô tả:** Module giáo viên - quản lý phiên điểm danh
+
+#### Công việc cần làm:
+
+| # | Task | File/Folder | Ưu tiên |
+|---|------|-------------|---------|
+| 3.1 | Tạo Teacher Dashboard UI | `views/pages/teacher/dashboard.py` | 🔴 High |
+| 3.2 | Tạo Session Management Page | `views/pages/teacher/session_management.py` | 🔴 High |
+| 3.3 | Tạo Create Session Dialog | `views/pages/teacher/create_session.py` | 🔴 High |
+| 3.4 | Tạo Class Attendance Report | `views/pages/teacher/class_report.py` | 🟡 Medium |
+| 3.5 | Tạo Manual Attendance Page | `views/pages/teacher/manual_attendance.py` | 🟡 Medium |
+| 3.6 | Hoàn thiện QRService | `services/qr_service.py` | 🔴 High |
+| 3.7 | Tạo AttendanceSessionService | `services/attendance_session_service.py` | 🔴 High |
+| 3.8 | TeacherController | `controllers/teacher_controller.py` | 🔴 High |
+| 3.9 | Unit tests cho Teacher | `tests/test_teacher.py` | 🟡 Medium |
+
+#### Checklist:
+- [ ] Dashboard hiển thị: lớp phụ trách, tổng sinh viên, tỷ lệ điểm danh
+- [ ] Tạo phiên điểm danh mới (QR/Token/Manual)
+- [ ] Generate QR Code tự động refresh mỗi 30s
+- [ ] Generate Link/Token điểm danh
+- [ ] Manual attendance: chọn sinh viên → đánh dấu Present/Absent
+- [ ] Xem danh sách sinh viên đã điểm danh realtime
+- [ ] Auto-close session khi hết thời gian
+- [ ] Export báo cáo lớp (CSV/Excel)
