@@ -19,7 +19,7 @@ from .auth_exceptions import (
     UnauthorizedError,
     SessionExpiredError,
 )
-from .validation_exceptions import ValidationError
+from .validation_exceptions import ValidationError, NotFoundError
 from .database_exceptions import DatabaseError
 
 __all__ = [
@@ -28,5 +28,6 @@ __all__ = [
     "UnauthorizedError",
     "SessionExpiredError",
     "ValidationError",
+    "NotFoundError",
     "DatabaseError",
 ]

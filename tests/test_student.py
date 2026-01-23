@@ -272,7 +272,8 @@ class TestStudentService:
         
         # Assert
         assert len(history) == 3
-        assert history[0]['student_code'] == "SV001" or 'record_id' in history[0]
+        assert 'record_id' in history[0]
+        assert 'session_id' in history[0]
     
     def test_update_profile_success(
         self,
@@ -444,8 +445,8 @@ class TestStudentController:
         # Invalid codes
         assert student_controller.validate_student_code("") is False
         assert student_controller.validate_student_code("   ") is False
-        assert student_controller.validate_student_code("SV") is False  # Too short
-        assert student_controller.validate_student_code("VERYLONGSTUDENTCODE123") is False  # Too long
+        assert student_controller.validate_student_code("SV01") is False  # Too short (4 chars)
+        assert student_controller.validate_student_code("VERYLONGSTUDENTCODE123") is False  # Too long (>15 chars)
 
 
 # =============================================================================

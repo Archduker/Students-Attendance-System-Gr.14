@@ -325,6 +325,6 @@ class StudentController:
             return False
         
         # Implement validation logic
-        # VD: Mã sinh viên phải có độ dài 6-10 ký tự
+        # VD: Mã sinh viên phải có độ dài 5-15 ký tự
         code = student_code.strip()
-        return 6 <= len(code) <= 10
+        return 5 <= len(code) <= 15

@@ -61,3 +61,37 @@ class ValidationError(Exception):
     def has_errors(self) -> bool:
         """Kiểm tra có lỗi không."""
         return bool(self.errors) or bool(self.message)
+
+
+class NotFoundError(Exception):
+    """
+    Exception khi không tìm thấy resource.
+    
+    Sử dụng khi:
+    - Không tìm thấy session điểm danh
+    - Không tìm thấy sinh viên
+    - Không tìm thấy lớp học
+    
+    Example:
+        >>> raise NotFoundError("Session không tồn tại", resource_type="session", resource_id="SESSION123")
+    """
+    
+    def __init__(
+        self, 
+        message: str = "Không tìm thấy resource",
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None
+    ):
+        self.message = message
+        self.resource_type = resource_type
+        self.resource_id = resource_id
+        
+        # Tạo message chi tiết
+        if resource_type and resource_id:
+            full_message = f"{resource_type} với ID '{resource_id}' không tồn tại"
+        elif resource_type:
+            full_message = f"{resource_type}: {message}"
+        else:
+            full_message = message
+            
+        super().__init__(full_message)
