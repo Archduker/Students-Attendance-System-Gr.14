@@ -27,6 +27,8 @@ from .auth_service import AuthService
 from .security_service import SecurityService
 from .qr_service import QRService
 from .email_service import EmailService
+from .admin_service import AdminService
+from .report_service import ReportService
 from .student_service import StudentService
 from .session_service import SessionService
 
@@ -35,6 +37,8 @@ __all__ = [
     "SecurityService", 
     "QRService",
     "EmailService",
+    "AdminService",
+    "ReportService",
     "StudentService",
-    "SessionService",
+    "SessionService"
 ]
