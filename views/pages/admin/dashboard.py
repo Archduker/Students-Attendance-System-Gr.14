@@ -1,315 +1,389 @@
 """
-Admin Dashboard UI - Trang tổng quan hệ thống
-=============================================
+Admin Dashboard - System Pulse
+==============================
 
-Dashboard hiển thị:
-- Tổng số users, classes, sessions
-- Hoạt động gần đây
-- Thống kê điểm danh
+Dashboard tổng quan hệ thống cho Admin.
+Matching UI from Image 2: System Pulse with metrics, purple wave chart, and Access Control panel.
 """
 
 import customtkinter as ctk
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
-
+from typing import Optional
+import math
 
 class AdminDashboard(ctk.CTkFrame):
     """
-    Admin Dashboard Page - Tổng quan hệ thống.
-    
-    Features:
-        - Summary cards: tổng users, classes, sessions
-        - Recent activity log
-        - Attendance statistics
-        - Quick actions
-        
-    Example:
-        >>> dashboard = AdminDashboard(parent, admin_controller)
-        >>> dashboard.pack(fill="both", expand=True)
+    Admin Dashboard showing system pulse and metrics.
+    Matches Image 2 design.
     """
     
-    def __init__(
-        self, 
-        parent, 
-        admin_controller,
-        **kwargs
-    ):
-        """
-        Khởi tạo Admin Dashboard.
+    def __init__(self, parent, admin_user=None, controller=None):
+        super().__init__(parent, fg_color="transparent")
         
-        Args:
-            parent: Parent widget
-            admin_controller: AdminController instance
-        """
-        super().__init__(parent, **kwargs)
+        self.admin_user = admin_user
+        self.controller = controller
         
-        self.admin_controller = admin_controller
-        self.stats_data: Dict[str, Any] = {}
+        # Grid layout: Main content (left, 70%) + Access Control (right, 30%)
+        self.grid_columnconfigure(0, weight=7)
+        self.grid_columnconfigure(1, weight=3)
+        self.grid_rowconfigure(0, weight=1)
         
-        self._init_ui()
-        self._load_data()
+        self._setup_ui()
+        # self.load_data()
     
-    def _init_ui(self):
-        """Khởi tạo UI components."""
-        # Configure grid
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+    def _setup_ui(self):
+        # Left column: Main content
+        left_col = ctk.CTkFrame(self, fg_color="transparent")
+        left_col.grid(row=0, column=0, sticky="nsew", padx=(0, 15))
         
-        # Header
-        self._create_header()
+        self._create_header(left_col)
+        self._create_metrics_cards(left_col)
+        self._create_attendance_graph(left_col)
+        self._create_audit_alerts(left_col)
         
-        # Main content
-        self._create_content()
+        # Right column: Access Control
+        right_col = ctk.CTkFrame(self, fg_color="transparent")
+        right_col.grid(row=0, column=1, sticky="nsew")
+        
+        self._create_access_control(right_col)
     
-    def _create_header(self):
-        """Tạo header section."""
-        header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
+    def _create_header(self, parent):
+        """Header with title and Reboot button."""
+        header = ctk.CTkFrame(parent, fg_color="transparent")
+        header.pack(fill="x", pady=(0, 25))
         
-        # Title
-        title_label = ctk.CTkLabel(
-            header_frame,
-            text="📊 Admin Dashboard",
-            font=ctk.CTkFont(size=28, weight="bold")
-        )
-        title_label.pack(side="left")
+        # Title section
+        title_frame = ctk.CTkFrame(header, fg_color="transparent")
+        title_frame.pack(side="left")
         
-        # Refresh button
-        refresh_btn = ctk.CTkButton(
-            header_frame,
-            text="🔄 Refresh",
-            width=100,
-            command=self._refresh_data
-        )
-        refresh_btn.pack(side="right")
+        ctk.CTkLabel(
+            title_frame,
+            text="System Pulse",
+            font=("Inter", 26, "bold"),
+            text_color="#0F172A"
+        ).pack(anchor="w")
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="Monitoring 9 academic time-slots and infrastructure integrity.",
+            font=("Inter", 12),
+            text_color="#64748B"
+        ).pack(anchor="w")
+        
+        # Reboot button
+        ctk.CTkButton(
+            header,
+            text="Reboot Telemetry",
+            fg_color="#0F172A",
+            text_color="white",
+            font=("Inter", 11, "bold"),
+            width=150,
+            height=35,
+            corner_radius=8,
+            hover_color="#1E293B"
+        ).pack(side="right")
     
-    def _create_content(self):
-        """Tạo main content."""
-        content_frame = ctk.CTkScrollableFrame(self)
-        content_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
-        content_frame.grid_columnconfigure((0, 1, 2), weight=1)
-        
-        # Summary Cards
-        self._create_summary_cards(content_frame)
-        
-        # Charts and Stats
-        self._create_stats_section(content_frame)
-        
-        # Recent Activity
-        self._create_activity_section(content_frame)
-    
-    def _create_summary_cards(self, parent):
-        """Tạo summary cards."""
+    def _create_metrics_cards(self, parent):
+        """4 metrics cards in a row."""
         cards_frame = ctk.CTkFrame(parent, fg_color="transparent")
-        cards_frame.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 20))
-        cards_frame.grid_columnconfigure((0, 1, 2), weight=1)
+        cards_frame.pack(fill="x", pady=(0, 20))
         
-        # Total Users Card
-        self.users_card = self._create_stat_card(
-            cards_frame,
-            "👥 Total Users",
-            "0",
-            "All system users",
-            0, 0
-        )
+        # Configure grid for 4 equal columns
+        for i in range(4):
+            cards_frame.grid_columnconfigure(i, weight=1)
         
-        # Total Classes Card
-        self.classes_card = self._create_stat_card(
-            cards_frame,
-            "📚 Total Classes",
-            "0",
-            "Active classes",
-            0, 1
-        )
+        # Mock data - will be replaced with real data from controller
+        metrics = [
+            ("💚 Cluster Health", "Optimal", "#22C55E"),
+            ("🔵 QR Latency", "14ms", "#3B82F6"),
+            ("🟣 DB Connections", "182", "#A855F7"),
+            ("🟡 Verified Auth", "1.2K", "#EAB308"),
+        ]
         
-        # Total Sessions Card
-        self.sessions_card = self._create_stat_card(
-            cards_frame,
-            "📝 Total Sessions",
-            "0",
-            "This month",
-            0, 2
-        )
+        for i, (label, value, color) in enumerate(metrics):
+            self._create_metric_card(cards_frame, label, value, color, i)
     
-    def _create_stat_card(
-        self, 
-        parent, 
-        title: str, 
-        value: str, 
-        subtitle: str,
-        row: int,
-        col: int
-    ) -> ctk.CTkFrame:
-        """
-        Tạo một stat card.
-        
-        Args:
-            parent: Parent widget
-            title: Tiêu đề card
-            value: Giá trị hiển thị
-            subtitle: Phụ đề
-            row: Grid row
-            col: Grid column
-            
-        Returns:
-            Card frame
-        """
-        card = ctk.CTkFrame(parent, corner_radius=10)
-        card.grid(row=row, column=col, padx=10, pady=10, sticky="ew")
-        
-        # Title
-        title_label = ctk.CTkLabel(
-            card,
-            text=title,
-            font=ctk.CTkFont(size=14, weight="bold")
+    def _create_metric_card(self, parent, label, value, color, col):
+        """Single metric card."""
+        card = ctk.CTkFrame(
+            parent,
+            fg_color="white",
+            corner_radius=15,
+            border_width=1,
+            border_color="#E2E8F0"
         )
-        title_label.pack(pady=(15, 5))
+        card.grid(row=0, column=col, sticky="ew", padx=7, pady=5)
+        
+        # Content
+        content = ctk.CTkFrame(card, fg_color="transparent")
+        content.pack(fill="both", padx=20, pady=20)
+        
+        # Label with icon
+        ctk.CTkLabel(
+            content,
+            text=label,
+            font=("Inter", 11),
+            text_color="#64748B"
+        ).pack(anchor="w")
         
         # Value
-        value_label = ctk.CTkLabel(
-            card,
+        ctk.CTkLabel(
+            content,
             text=value,
-            font=ctk.CTkFont(size=32, weight="bold"),
-            text_color="#1f6aa5"
-        )
-        value_label.pack(pady=5)
-        
-        # Subtitle
-        subtitle_label = ctk.CTkLabel(
-            card,
-            text=subtitle,
-            font=ctk.CTkFont(size=11),
-            text_color="gray"
-        )
-        subtitle_label.pack(pady=(5, 15))
-        
-        # Store value label for updates
-        card.value_label = value_label
-        
-        return card
+            font=("Inter", 24, "bold"),
+            text_color="#0F172A"
+        ).pack(anchor="w", pady=(5, 0))
     
-    def _create_stats_section(self, parent):
-        """Tạo statistics section."""
-        stats_frame = ctk.CTkFrame(parent, corner_radius=10)
-        stats_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=(0, 10), pady=(0, 20))
+    def _create_attendance_graph(self, parent):
+        """Purple wave chart showing attendance pulse."""
+        graph_card = ctk.CTkFrame(
+            parent,
+            fg_color="white",
+            corner_radius=15,
+            border_width=1,
+            border_color="#E2E8F0"
+        )
+        graph_card.pack(fill="both", expand=True, pady=(0, 20))
+        
+        # Header
+        header = ctk.CTkFrame(graph_card, fg_color="transparent")
+        header.pack(fill="x", padx=25, pady=20)
         
         # Title
-        title_label = ctk.CTkLabel(
-            stats_frame,
-            text="📈 Attendance Statistics (Last 7 Days)",
-            font=ctk.CTkFont(size=16, weight="bold")
-        )
-        title_label.pack(pady=(15, 10), padx=15, anchor="w")
+        title_area = ctk.CTkFrame(header, fg_color="transparent")
+        title_area.pack(side="left")
         
-        # Stats content
-        self.stats_content = ctk.CTkFrame(stats_frame, fg_color="transparent")
-        self.stats_content.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        ctk.CTkLabel(
+            title_area,
+            text="Global Attendance Pulse (5 Daily Peaks)",
+            font=("Inter", 14, "bold"),
+            text_color="#0F172A"
+        ).pack(anchor="w")
         
-        # Placeholder - sẽ được thay thế bằng chart thực tế
-        placeholder = ctk.CTkLabel(
-            self.stats_content,
-            text="Chart: Attendance trends over time\n(To be implemented with matplotlib)",
-            font=ctk.CTkFont(size=12),
-            text_color="gray"
+        # Active badge
+        badge = ctk.CTkLabel(
+            header,
+            text="ACTIVE TELEMETRY",
+            font=("Inter", 9, "bold"),
+            text_color="#A855F7",
+            fg_color="#F3E8FF",
+            corner_radius=5,
+            padx=10,
+            pady=5
         )
-        placeholder.pack(pady=30)
+        badge.pack(side="right")
+        
+        # Canvas for chart
+        canvas = ctk.CTkCanvas(
+            graph_card,
+            bg="white",
+            highlightthickness=0,
+            height=250
+        )
+        canvas.pack(fill="both", expand=True, padx=25, pady=(0, 20))
+        
+        # Draw simple wave chart after widget is shown
+        canvas.bind("<Configure>", lambda e: self._draw_wave_chart(canvas))
     
-    def _create_activity_section(self, parent):
-        """Tạo recent activity section."""
-        activity_frame = ctk.CTkFrame(parent, corner_radius=10)
-        activity_frame.grid(row=1, column=2, sticky="nsew", padx=(10, 0), pady=(0, 20))
+    def _draw_wave_chart(self, canvas):
+        """Draw purple wave chart on canvas."""
+        canvas.delete("all")  # Clear previous drawings
         
-        # Title
-        title_label = ctk.CTkLabel(
-            activity_frame,
-            text="🔔 Recent Activity",
-            font=ctk.CTkFont(size=16, weight="bold")
-        )
-        title_label.pack(pady=(15, 10), padx=15, anchor="w")
+        width = canvas.winfo_width()
+        height = canvas.winfo_height()
         
-        # Activity list
-        self.activity_list = ctk.CTkScrollableFrame(
-            activity_frame,
-            fg_color="transparent"
-        )
-        self.activity_list.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        if width <= 1 or height <= 1:
+            return
         
-        # Placeholder activities
-        self._add_activity_item("User 'admin' logged in", "2 minutes ago")
-        self._add_activity_item("New class 'CS101' created", "15 minutes ago")
-        self._add_activity_item("User 'teacher1' updated", "1 hour ago")
+        # Draw time labels (X-axis)
+        times = ["07:30", "08:00", "09:00", "10:00", "11:30", "12:30", "13:00", "14:30", "15:00", "16:30", "17:30"]
+        step_x = width / (len(times) - 1)
+        
+        for i, time in enumerate(times):
+            x = i * step_x
+            canvas.create_text(x, height - 10, text=time, fill="#94A3B8", font=("Inter", 9))
+        
+        # Draw wave (5 peaks as mentioned)
+        points = []
+        num_points = 50
+        for i in range(num_points):
+            x = (i / (num_points - 1)) * width
+            # Create wave with 5 peaks
+            y_val = 0.5 + 0.4 * math.sin(5 * 2 * math.pi * i / num_points)
+            y = (1 - y_val) * (height - 40) + 20
+            points.append((x, y))
+        
+        # Fill area under curve (light purple)
+        fill_points = [(0, height - 30)] + points + [(width, height - 30)]
+        canvas.create_polygon(fill_points, fill="#E9D5FF", outline="")
+        
+        # Draw line (dark purple)
+        for i in range(len(points) - 1):
+            canvas.create_line(
+                points[i][0], points[i][1],
+                points[i+1][0], points[i+1][1],
+                fill="#A855F7", width=3, smooth=True
+            )
     
-    def _add_activity_item(self, text: str, time: str):
-        """
-        Thêm activity item vào list.
-        
-        Args:
-            text: Nội dung activity
-            time: Thời gian
-        """
-        item_frame = ctk.CTkFrame(self.activity_list, fg_color="transparent")
-        item_frame.pack(fill="x", pady=5)
-        
-        # Activity text
-        activity_label = ctk.CTkLabel(
-            item_frame,
-            text=text,
-            font=ctk.CTkFont(size=12),
-            anchor="w"
+    def _create_audit_alerts(self, parent):
+        """Identity Audit Alerts section."""
+        alerts_card = ctk.CTkFrame(
+            parent,
+            fg_color="white",
+            corner_radius=15,
+            border_width=1,
+            border_color="#E2E8F0"
         )
-        activity_label.pack(fill="x")
+        alerts_card.pack(fill="x")
+        
+        # Content
+        content = ctk.CTkFrame(alerts_card, fg_color="transparent")
+        content.pack(fill="x", padx=25, pady=20)
+        
+        # Header
+        header = ctk.CTkFrame(content, fg_color="transparent")
+        header.pack(fill="x", pady=(0, 15))
+        
+        ctk.CTkLabel(
+            header,
+            text="Identity Audit Alerts",
+            font=("Inter", 13, "bold"),
+            text_color="#0F172A"
+        ).pack(side="left")
+        
+        badge = ctk.CTkLabel(
+            header,
+            text="1 URGENT",
+            font=("Inter", 9, "bold"),
+            text_color="#EF4444",
+            fg_color="#FEE2E2",
+            corner_radius=5,
+            padx=8,
+            pady=4
+        )
+        badge.pack(side="right")
+        
+        # Alert item
+        alert = ctk.CTkFrame(content, fg_color="#FEF2F2", corner_radius=10)
+        alert.pack(fill="x", pady=5)
+        
+        alert_content = ctk.CTkFrame(alert, fg_color="transparent")
+        alert_content.pack(fill="x", padx=15, pady=12)
+        
+        # Alert text
+        info_frame = ctk.CTkFrame(alert_content, fg_color="transparent")
+        info_frame.pack(side="left", fill="x", expand=True)
+        
+        ctk.CTkLabel(
+            info_frame,
+            text="Geofence Violation Detected",
+            font=("Inter", 12, "bold"),
+            text_color="#DC2626"
+        ).pack(anchor="w")
+        
+        ctk.CTkLabel(
+            info_frame,
+            text="3 students attempted validation outside HCMC UT perimeter.",
+            font=("Inter", 10),
+            text_color="#7F1D1D"
+        ).pack(anchor="w")
         
         # Time
-        time_label = ctk.CTkLabel(
-            item_frame,
-            text=time,
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-            anchor="w"
-        )
-        time_label.pack(fill="x")
-    
-    def _load_data(self):
-        """Load dashboard data từ controller."""
-        try:
-            # Get dashboard stats from controller
-            result = self.admin_controller.get_dashboard_stats()
-            
-            if result.get("success"):
-                self.stats_data = result.get("data", {})
-                self._update_ui()
-            else:
-                self._show_error(result.get("error", "Failed to load data"))
-                
-        except Exception as e:
-            self._show_error(f"Error loading data: {str(e)}")
-    
-    def _update_ui(self):
-        """Update UI với data mới."""
-        # Update summary cards
-        if self.stats_data:
-            total_users = self.stats_data.get("total_users", 0)
-            total_classes = self.stats_data.get("total_classes", 0)
-            total_sessions = self.stats_data.get("total_sessions", 0)
-            
-            self.users_card.value_label.configure(text=str(total_users))
-            self.classes_card.value_label.configure(text=str(total_classes))
-            self.sessions_card.value_label.configure(text=str(total_sessions))
-    
-    def _refresh_data(self):
-        """Refresh dashboard data."""
-        self._load_data()
-    
-    def _show_error(self, message: str):
-        """
-        Hiển thị error message.
+        ctk.CTkLabel(
+            alert_content,
+            text="4m ago",
+            font=("Inter", 10),
+            text_color="#94A3B8"
+        ).pack(side="right", padx=(10, 0))
         
-        Args:
-            message: Error message
-        """
-        # TODO: Implement proper error dialog
-        print(f"Error: {message}")
+        # Link
+        link = ctk.CTkLabel(
+            content,
+            text="Audit GPS Logs",
+            font=("Inter", 11, "underline"),
+            text_color="#3B82F6",
+            cursor="hand2"
+        )
+        link.pack(anchor="w", pady=(5, 0))
     
-    def refresh(self):
-        """Public method để refresh dashboard."""
-        self._refresh_data()
+    def _create_access_control(self, parent):
+        """Access Control panel (dark theme)."""
+        panel = ctk.CTkFrame(
+            parent,
+            fg_color="#0F172A",  # Dark
+            corner_radius=15
+        )
+        panel.pack(fill="both", expand=True)
+        
+        # Header
+        ctk.CTkLabel(
+            panel,
+            text="ACCESS CONTROL",
+            font=("Inter", 12, "bold"),
+            text_color="#22D3EE"  # Cyan
+        ).pack(anchor="w", padx=25, pady=(25, 20))
+        
+        # QR Encryption section
+        qr_section = ctk.CTkFrame(panel, fg_color="transparent")
+        qr_section.pack(fill="x", padx=25, pady=(0, 20))
+        
+        ctk.CTkLabel(
+            qr_section,
+            text="QR ENCRYPTION",
+            font=("Inter", 9, "bold"),
+            text_color="#64748B"
+        ).pack(anchor="w")
+        
+        ctk.CTkLabel(
+            qr_section,
+            text="AES-256 Rotation",
+            font=("Inter", 13, "bold"),
+            text_color="white"
+        ).pack(anchor="w", pady=(5, 5))
+        
+        status_frame = ctk.CTkFrame(qr_section, fg_color="transparent")
+        status_frame.pack(anchor="w")
+        
+        ctk.CTkLabel(
+            status_frame,
+            text="● ACTIVE",
+            font=("Inter", 10),
+            text_color="#22C55E"
+        ).pack(side="left")
+        
+        # Identity Sync section
+        sync_section = ctk.CTkFrame(panel, fg_color="transparent")
+        sync_section.pack(fill="x", padx=25, pady=(0, 25))
+        
+        ctk.CTkLabel(
+            sync_section,
+            text="IDENTITY SYNC",
+            font=("Inter", 9, "bold"),
+            text_color="#64748B"
+        ).pack(anchor="w")
+        
+        ctk.CTkLabel(
+            sync_section,
+            text="1,250 Verified Profiles",
+            font=("Inter", 13, "bold"),
+            text_color="white"
+        ).pack(anchor="w", pady=(5, 10))
+        
+        # Progress bar
+        progress_bg = ctk.CTkFrame(sync_section, height=6, fg_color="#334155", corner_radius=3)
+        progress_bg.pack(fill="x", pady=(0, 5))
+        progress_bg.pack_propagate(False)
+        
+        progress_fill = ctk.CTkFrame(progress_bg, height=6, fg_color="#A855F7", corner_radius=3)
+        progress_fill.place(relwidth=0.83, relheight=1)  # 83% = 1250/1500
+        
+        # Button
+        ctk.CTkButton(
+            panel,
+            text="SYSTEM-WIDE AUDIT",
+            fg_color="#6366F1",
+            text_color="white",
+            font=("Inter", 11, "bold"),
+            height=40,
+            corner_radius=8,
+            hover_color="#4F46E5"
+        ).pack(fill="x", padx=25, pady=(0, 25))

@@ -1,27 +1,11 @@
-"""
-Login Page - Trang đăng nhập
-============================
-
-Trang đăng nhập với:
-- Username/Password input với validation
-- Remember Me checkbox
-- Forgot Password link
-- Error message display
-- Kết nối với AuthController
-"""
-
 import customtkinter as ctk
 from typing import Optional, Callable
-
 from views.styles.theme import COLORS, FONTS, SPACING, RADIUS
-
 
 class LoginPage(ctk.CTkFrame):
     """
-    Trang đăng nhập.
-    
-    Example:
-        >>> login_page = LoginPage(root, auth_controller, on_login_success)
+    Trang đăng nhập với thiết kế Split-Screen hiện đại.
+    Modified: Pixel-perfect adjustments for fonts, sizing, and alignment to match mockup.
     """
     
     def __init__(
@@ -31,297 +15,417 @@ class LoginPage(ctk.CTkFrame):
         on_login_success: Optional[Callable] = None,
         on_forgot_password: Optional[Callable] = None
     ):
-        """
-        Khởi tạo LoginPage.
-        
-        Args:
-            master: Parent widget
-            auth_controller: AuthController instance
-            on_login_success: Callback khi login thành công
-            on_forgot_password: Callback khi click Forgot Password
-        """
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master, fg_color="white")
         self.pack(expand=True, fill="both")
         
         self.auth_controller = auth_controller
         self.on_login_success = on_login_success
         self.on_forgot_password = on_forgot_password
         
-        self._create_ui()
-    
-    def _create_ui(self):
-        """Tạo UI components."""
-        # Center container
-        self.center_frame = ctk.CTkFrame(
+        # Grid layout: 55% Left, 45% Right to match visual balance
+        self.grid_columnconfigure(0, weight=11)
+        self.grid_columnconfigure(1, weight=9)
+        self.grid_rowconfigure(0, weight=1)
+
+        self._create_left_panel()
+        self._create_right_panel()
+
+    def _create_left_panel(self):
+        """Tạo panel bên trái (Dark Blue Theme)"""
+        self.left_frame = ctk.CTkFrame(
             self,
-            fg_color=COLORS.get("bg_dark", "#1F2937"),
-            corner_radius=RADIUS["lg"]
+            fg_color="#0F172A", # Dark Navy
+            corner_radius=0
         )
-        self.center_frame.place(relx=0.5, rely=0.5, anchor="center")
+        self.left_frame.grid(row=0, column=0, sticky="nsew")
         
-        # Logo/Title
-        self.title_label = ctk.CTkLabel(
-            self.center_frame,
-            text="🎓 Student Attendance System",
-            font=(FONTS["family"], FONTS["size_2xl"], "bold"),
-            text_color=COLORS.get("primary", "#3B82F6")
+        # Content Container - centered vertically, with left padding
+        self.left_content = ctk.CTkFrame(self.left_frame, fg_color="transparent")
+        self.left_content.place(relx=0.1, rely=0.5, anchor="w")
+
+        # 1. Logo Section
+        self.logo_frame = ctk.CTkFrame(self.left_content, fg_color="transparent")
+        self.logo_frame.pack(anchor="w", pady=(0, 40))
+        
+        self.logo_icon = ctk.CTkLabel(
+            self.logo_frame,
+            text="🛡️", 
+            font=("Arial", 28),
+            text_color="#6366f1"
         )
-        self.title_label.pack(pady=(SPACING["xl"], SPACING["sm"]))
+        self.logo_icon.pack(side="left", padx=(0, 15))
         
-        # Subtitle
-        self.subtitle_label = ctk.CTkLabel(
-            self.center_frame,
-            text="Đăng nhập để tiếp tục",
-            font=(FONTS["family"], FONTS["size_base"]),
-            text_color=COLORS.get("text_secondary", "#6B7280")
-        )
-        self.subtitle_label.pack(pady=(0, SPACING["lg"]))
+        self.logo_text_frame = ctk.CTkFrame(self.logo_frame, fg_color="transparent")
+        self.logo_text_frame.pack(side="left")
         
-        # Form container
-        self.form_frame = ctk.CTkFrame(
-            self.center_frame,
-            fg_color="transparent"
-        )
-        self.form_frame.pack(padx=SPACING["xl"], pady=SPACING["md"])
+        ctk.CTkLabel(
+            self.logo_text_frame,
+            text="UNIATTEND",
+            font=("Inter", 18, "bold"),
+            text_color="white"
+        ).pack(anchor="w")
         
-        # Role selector label
-        self.role_label = ctk.CTkLabel(
-            self.form_frame,
-            text="Vai trò",
-            font=(FONTS["family"], FONTS["size_sm"]),
-            text_color=COLORS.get("text_secondary", "#6B7280"),
+        ctk.CTkLabel(
+            self.logo_text_frame,
+            text="HCMC University of Transport",
+            font=("Inter", 12),
+            text_color="#94A3B8"
+        ).pack(anchor="w")
+
+        # 2. System Status Badge
+        self.badge = ctk.CTkFrame(self.left_content, fg_color="#1E293B", corner_radius=20)
+        self.badge.pack(anchor="w", pady=(0, 25))
+        ctk.CTkLabel(
+            self.badge,
+            text="●   SYSTEM ONLINE • V3.5.0",
+            font=("Inter", 10, "bold"),
+            text_color="#22C55E",
+            padx=15, 
+            pady=5,
+        ).pack()
+
+        # 3. Main Headline (Multi-color workaround using stacked frames)
+        # Line 1: "A <Smart> and <Secure>"
+        h1_line1 = ctk.CTkFrame(self.left_content, fg_color="transparent")
+        h1_line1.pack(anchor="w")
+        
+        def add_text(parent, text, color="white"):
+            ctk.CTkLabel(
+                parent, 
+                text=text, 
+                font=("Inter", 40, "bold"), 
+                text_color=color,
+                padx=0, pady=0
+            ).pack(side="left")
+
+        add_text(h1_line1, "A ")
+        add_text(h1_line1, "Smart ", "#38BDF8") # Light Blue / Cyan
+        add_text(h1_line1, "and ", "white")
+        add_text(h1_line1, "Secure", "#38BDF8") 
+
+        # Line 2 & 3
+        ctk.CTkLabel(
+            self.left_content,
+            text="Attendance\nManagement System.",
+            font=("Inter", 40, "bold"),
+            text_color="white",
+            justify="left",
             anchor="w"
-        )
-        self.role_label.pack(fill="x", pady=(0, SPACING["xs"]))
-        
-        # Role selector (segmented button)
-        self.role_var = ctk.StringVar(value="STUDENT")
-        self.role_selector = ctk.CTkSegmentedButton(
-            self.form_frame,
-            values=["ADMIN", "TEACHER", "STUDENT"],
-            variable=self.role_var,
-            font=(FONTS["family"], FONTS["size_sm"]),
-            width=300,
-            height=36
-        )
-        self.role_selector.pack(pady=(0, SPACING["md"]))
-        
-        # Set callback to auto-fill username when role changes
-        self.role_selector.configure(command=self._on_role_change)
-        
-        # Email label (text will change based on role)
-        self.email_label = ctk.CTkLabel(
-            self.form_frame,
-            text="University email",
-            font=(FONTS["family"], FONTS["size_sm"]),
-            text_color=COLORS.get("text_secondary", "#6B7280"),
+        ).pack(anchor="w", pady=(0, 25))
+
+        # 4. Marketing Description
+        ctk.CTkLabel(
+            self.left_content,
+            text="Empowering the HCMC University of Transport with\ncutting-edge attendance tracking and real-time\nstudent insights.",
+            font=("Inter", 14),
+            text_color="#94A3B8",
+            justify="left",
             anchor="w"
-        )
-        self.email_label.pack(fill="x", pady=(0, SPACING["xs"]))
+        ).pack(anchor="w", pady=(0, 60))
+
+        # 5. Feature Chips
+        self.features_frame = ctk.CTkFrame(self.left_content, fg_color="transparent")
+        self.features_frame.pack(anchor="w", fill="x")
+
+        features = [
+            "Instant QR Verification",
+            "Smart Analytics Dashboard",
+            "Secure Identity Validation"
+        ]
         
-        # Email entry
+        for feat in features:
+            f_frm = ctk.CTkFrame(self.features_frame, fg_color="transparent", border_width=1, border_color="#334155", corner_radius=30)
+            f_frm.pack(side="left", padx=(0, 15), ipady=2)
+            ctk.CTkLabel(
+                f_frm, 
+                text=feat, 
+                text_color="#94A3B8", 
+                font=("Inter", 11),
+                padx=15,
+                pady=6
+            ).pack()
+
+        # 6. Footer (Absolute positioning at bottom)
+        self.footer_frame = ctk.CTkFrame(self.left_frame, fg_color="transparent")
+        self.footer_frame.pack(side="bottom", fill="x", padx=40, pady=30)
+        
+        # Divider
+        ctk.CTkFrame(self.footer_frame, fg_color="#334155", height=1).pack(fill="x", pady=(0, 15))
+        
+        links_frame = ctk.CTkFrame(self.footer_frame, fg_color="transparent")
+        links_frame.pack(fill="x")
+        
+        for l in ["PRIVACY POLICY", "SECURITY AUDIT", "SUPPORT"]:
+            ctk.CTkLabel(
+                links_frame,
+                text=l,
+                text_color="#64748B",
+                font=("Inter", 9, "bold")
+            ).pack(side="left", padx=(0, 25))
+            
+        ctk.CTkLabel(
+            links_frame,
+            text="© 2026 UTH - IT Division",
+            text_color="#64748B",
+            font=("Inter", 9)
+        ).pack(side="right")
+
+    def _create_right_panel(self):
+        """Tạo panel bên phải (Login Form)"""
+        self.right_frame = ctk.CTkFrame(
+            self,
+            fg_color="white",
+            corner_radius=0
+        )
+        self.right_frame.grid(row=0, column=1, sticky="nsew")
+        
+        # Center container
+        self.form_container = ctk.CTkFrame(self.right_frame, fg_color="transparent")
+        self.form_container.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.7)
+
+        # 1. Header Group
+        ctk.CTkLabel(
+            self.form_container,
+            text="Login",
+            text_color="#000000",
+            font=("Inter", 36, "bold")
+        ).pack(anchor="w", pady=(0, 5))
+        
+        ctk.CTkLabel(
+            self.form_container,
+            text="Welcome back. Access your\nacademic portal below.",
+            text_color="#6B7280",
+            font=("Inter", 14),
+            justify="left",
+            anchor="w"
+        ).pack(anchor="w", pady=(0, 35))
+
+        # 2. Input Fields
+        # Email
+        ctk.CTkLabel(
+            self.form_container,
+            text="UNIVERSITY EMAIL",
+            text_color="#9CA3AF", # Gray-400
+            font=("Inter", 11, "bold")
+        ).pack(anchor="w", pady=(0, 8))
+
         self.email_entry = ctk.CTkEntry(
-            self.form_frame,
-            placeholder_text="name@ut.edu.vn",
-            width=300,
-            height=40,
-            corner_radius=RADIUS["md"],
-            font=(FONTS["family"], FONTS["size_base"])
+            self.form_container,
+            placeholder_text="", # No popup
+            font=("Inter", 14),
+            height=48,
+            fg_color="#F3F4F6", # Gray-100
+            border_width=0,
+            text_color="#111827",
+            corner_radius=10
         )
-        self.email_entry.pack(pady=(0, SPACING["md"]))
-        self.email_entry.bind("<Return>", lambda e: self.password_entry.focus())
+        self.email_entry.pack(fill="x", pady=(0, 20))
+        # Adding simple placeholder manually
+        self.email_entry.configure(placeholder_text="name@ut.edu.vn")
+
+        # Password
+        pwd_label_row = ctk.CTkFrame(self.form_container, fg_color="transparent")
+        pwd_label_row.pack(fill="x", pady=(0, 8))
         
-        # Password label
-        self.password_label = ctk.CTkLabel(
-            self.form_frame,
-            text="Mật khẩu",
-            font=(FONTS["family"], FONTS["size_sm"]),
-            text_color=COLORS.get("text_secondary", "#6B7280"),
-            anchor="w"
-        )
-        self.password_label.pack(fill="x", pady=(0, SPACING["xs"]))
+        ctk.CTkLabel(
+            pwd_label_row,
+            text="PASSWORD",
+            text_color="#9CA3AF",
+            font=("Inter", 11, "bold")
+        ).pack(side="left")
         
-        # Password entry
-        self.password_entry = ctk.CTkEntry(
-            self.form_frame,
-            placeholder_text="Nhập password...",
-            show="•",
-            width=300,
-            height=40,
-            corner_radius=RADIUS["md"],
-            font=(FONTS["family"], FONTS["size_base"])
-        )
-        self.password_entry.pack(pady=(0, SPACING["md"]))
-        self.password_entry.bind("<Return>", lambda e: self._handle_login())
-        
-        # Options row (Remember me + Forgot password)
-        self.options_frame = ctk.CTkFrame(
-            self.form_frame,
-            fg_color="transparent"
-        )
-        self.options_frame.pack(fill="x", pady=(0, SPACING["md"]))
-        
-        # Remember me checkbox
-        self.remember_var = ctk.BooleanVar(value=False)
-        self.remember_checkbox = ctk.CTkCheckBox(
-            self.options_frame,
-            text="Ghi nhớ đăng nhập",
-            variable=self.remember_var,
-            font=(FONTS["family"], FONTS["size_sm"]),
-            text_color=COLORS.get("text_secondary", "#6B7280"),
-            checkbox_width=18,
-            checkbox_height=18,
-            corner_radius=4
-        )
-        self.remember_checkbox.pack(side="left")
-        
-        # Forgot password link
         self.forgot_btn = ctk.CTkButton(
-            self.options_frame,
-            text="Quên mật khẩu?",
-            font=(FONTS["family"], FONTS["size_sm"]),
-            text_color=COLORS.get("primary", "#3B82F6"),
+            pwd_label_row,
+            text="Forgot Password?",
+            font=("Inter", 11, "bold"),
+            text_color="#3B82F6",
             fg_color="transparent",
-            hover_color=COLORS.get("bg_tertiary", "#374151"),
-            width=100,
-            height=24,
+            hover=False,
+            width=0,
             command=self._handle_forgot_password
         )
         self.forgot_btn.pack(side="right")
-        
-        # Error message label
-        self.error_label = ctk.CTkLabel(
-            self.form_frame,
-            text="",
-            font=(FONTS["family"], FONTS["size_sm"]),
-            text_color=COLORS.get("error", "#EF4444"),
-            wraplength=280
+
+        self.password_entry = ctk.CTkEntry(
+            self.form_container,
+            placeholder_text="••••••",
+            show="•",
+            font=("Inter", 14),
+            height=48,
+            fg_color="#F3F4F6",
+            border_width=0,
+            text_color="#111827",
         )
-        self.error_label.pack(pady=(0, SPACING["sm"]))
+        self.password_entry.pack(fill="x", pady=(0, 15))
+
+        # Remember Me Checkbox
+        self.remember_var = ctk.BooleanVar(value=False)
+        self.remember_cb = ctk.CTkCheckBox(
+            self.form_container,
+            text="Remember me",
+            variable=self.remember_var,
+            font=("Inter", 12),
+            text_color="#6B7280",
+            fg_color="#0F172A",
+            checkbox_height=20,
+            checkbox_width=20,
+            hover_color="#334155",
+            corner_radius=5
+        )
+        self.remember_cb.pack(anchor="w", pady=(0, 25))
         
-        # Login button
+        # Load saved session
+        try:
+            from config.session_config import load_session
+            saved_session = load_session()
+            if saved_session and saved_session.get("last_email"):
+                self.email_entry.insert(0, saved_session["last_email"])
+                if saved_session.get("remember"):
+                    self.remember_var.set(True)
+        except Exception:
+            pass
+
+        # 3. Action Button
         self.login_btn = ctk.CTkButton(
-            self.form_frame,
-            text="Đăng nhập",
-            font=(FONTS["family"], FONTS["size_base"], "bold"),
-            fg_color=COLORS.get("primary", "#3B82F6"),
-            hover_color=COLORS.get("primary_hover", "#2563EB"),
-            width=300,
-            height=44,
-            corner_radius=RADIUS["md"],
+            self.form_container,
+            text="Proceed to Dashboard  >",
+            font=("Inter", 14, "bold"),
+            height=52,
+            fg_color="#000000",
+            text_color="white",
+            hover_color="#333333",
+            corner_radius=26,
             command=self._handle_login
         )
-        self.login_btn.pack(pady=(SPACING["sm"], SPACING["xl"]))
+        self.login_btn.pack(fill="x", pady=(0, 45))
         
-        # Footer
-        self.footer_label = ctk.CTkLabel(
-            self.center_frame,
-            text="© 2024 Group 14 - Student Attendance System",
-            font=(FONTS["family"], FONTS["size_xs"]),
-            text_color=COLORS.get("text_tertiary", "#9CA3AF")
+        # Error Label
+        self.error_label = ctk.CTkLabel(
+            self.form_container,
+            text="",
+            text_color="#EF4444",
+            font=("Inter", 11),
+            anchor="w"
         )
-        self.footer_label.pack(pady=(0, SPACING["lg"]))
-        
-        # Focus on email entry
-        self.email_entry.focus()
-    
-    def _on_role_change(self, role: str):
-        """
-        Callback khi role thay đổi - cập nhật label email theo role.
-        
-        Args:
-            role: Role được chọn (ADMIN, TEACHER, STUDENT)
-        """
-        # Cập nhật label email dựa trên role
-        if role == "ADMIN":
-            self.email_label.configure(text="Admin email")
-        else:  # TEACHER or STUDENT
-            self.email_label.configure(text="University email")
-    
-    def _validate_form(self) -> tuple[bool, str]:
-        """
-        Validate form inputs.
-        
-        Returns:
-            Tuple (is_valid, error_message)
-        """
-        username = self.username_entry.get().strip()
-        password = self.password_entry.get()
-        
-        if not username:
-            return False, "Vui lòng nhập email"
-        
-        if not password:
-            return False, "Vui lòng nhập mật khẩu"
-        
-        if len(username) < 3:
-            return False, "Email phải có ít nhất 3 ký tự"
-        
-        return True, ""
-    
-    def _show_error(self, message: str):
-        """Hiển thị error message."""
-        self.error_label.configure(text=message)
-    
-    def _clear_error(self):
-        """Xóa error message."""
-        self.error_label.configure(text="")
-    
-    def _set_loading(self, loading: bool):
-        """Set trạng thái loading."""
-        if loading:
-            self.login_btn.configure(text="Đang đăng nhập...", state="disabled")
-        else:
-            self.login_btn.configure(text="Đăng nhập", state="normal")
-    
-    def _handle_login(self):
-        """Xử lý đăng nhập."""
-        self._clear_error()
-        
-        # Validate form
-        is_valid, error = self._validate_form()
-        if not is_valid:
-            self._show_error(error)
-            return
-        
-        username = self.username_entry.get().strip()
-        password = self.password_entry.get()
-        remember = self.remember_var.get()
-        
-        # Nếu không có controller, hiển thị thông báo
-        if not self.auth_controller:
-            self._show_error("AuthController chưa được kết nối")
-            print(f"[DEBUG] Login attempt: {email} / {'*' * len(password)}")
-            print(f"[DEBUG] Remember me: {remember}")
-            return
-        
-        # Set loading state
-        self._set_loading(True)
-        
-        try:
-            # Gọi auth controller
-            result = self.auth_controller.handle_login(email, password)
+        self.error_label.pack(fill="x", pady=(0, 10))
+
+        # 4. Institutional Access (Tabs)
+        ctk.CTkLabel(
+            self.form_container,
+            text="INSTITUTIONAL ACCESS",
+            text_color="#D1D5DB", # Light gray
+            font=("Inter", 11, "bold"),
+            anchor="center"
+        ).pack(fill="x", pady=(0, 15))
+
+        self.role_frame = ctk.CTkFrame(self.form_container, fg_color="transparent")
+        self.role_frame.pack(fill="x")
+        self.role_frame.grid_columnconfigure(0, weight=1)
+        self.role_frame.grid_columnconfigure(1, weight=1)
+        self.role_frame.grid_columnconfigure(2, weight=1)
+
+        self.role_var = ctk.StringVar(value="STUDENT")
+        self.role_buttons = {}
+
+        roles = [
+            ("Student", "STUDENT", "🎓"),
+            ("Teacher", "TEACHER", "🖥️"),
+            ("Admin", "ADMIN", "🛡️")
+        ]
+
+        for i, (label, value, icon) in enumerate(roles):
+            # Container for each role to handle selection styling
+            btn = ctk.CTkButton(
+                self.role_frame,
+                text=f"{icon}\n{label}",
+                font=("Inter", 11, "bold"),
+                fg_color="transparent",
+                text_color="#9CA3AF" if value != "STUDENT" else "#3B82F6",
+                hover_color="#F3F4F6",
+                width=80,
+                height=70,
+                corner_radius=12,
+                command=lambda v=value: self._select_role(v)
+            )
+            btn.grid(row=0, column=i, sticky="ew", padx=5)
+            self.role_buttons[value] = btn
             
-            if result["success"]:
-                print(f"✅ Login success: {result['user'].full_name} ({result['role']})")
+        # Initial visual state
+        self._select_role("STUDENT")
+
+    def _select_role(self, role_value):
+        """Handle role selection visual state"""
+        self.role_var.set(role_value)
+        
+        for val, btn in self.role_buttons.items():
+            is_selected = (val == role_value)
+            btn.configure(
+                text_color="#3B82F6" if is_selected else "#9CA3AF",
+                fg_color="#EFF6FF" if is_selected else "transparent",
+                border_width=0
+            )
+        
+        # Update placeholder if needed
+        if role_value == "ADMIN":
+            self.email_entry.configure(placeholder_text="admin@ut.edu.vn")
+        else:
+            self.email_entry.configure(placeholder_text="name@ut.edu.vn")
+
+    def _handle_login(self):
+        self.error_label.configure(text="")
+        name = self.email_entry.get().strip()
+        pwd = self.password_entry.get()
+        
+        if not name or not pwd:
+            self.error_label.configure(text="Please enter valid credentials.")
+            return
+            
+        self.login_btn.configure(text="Verifying...", state="disabled")
+        self.after(500, lambda: self._process_login(name, pwd))
+        
+    def _process_login(self, email, password):
+        if self.auth_controller:
+            try:
+                # Role Validation Rule
+                selected_role = self.role_var.get()
                 
-                # Callback on success
-                if self.on_login_success:
-                    self.on_login_success(result["user"], remember)
-            else:
-                self._show_error(result.get("error", "Đăng nhập thất bại"))
+                result = self.auth_controller.handle_login(email, password)
+                if result.get("success"):
+                    user = result["user"]
+                    
+                    # Validate role matches
+                    if user.role.value != selected_role:
+                        self.error_label.configure(
+                            text=f"❌ Incorrect role! This account is {user.role.value}, not {selected_role}."
+                        )
+                        self.login_btn.configure(text="Proceed to Dashboard  >", state="normal")
+                        return
+
+                    # Save session
+                    if self.remember_var.get():
+                        try:
+                            from config.session_config import save_session
+                            save_session(email, True)
+                        except:
+                            pass
+                            
+                    if self.on_login_success:
+                        self.on_login_success(user, self.remember_var.get())
+                    return # Stop execution to avoid accessing destroyed widgets
+                else:
+                    self.error_label.configure(text=result.get("error", "Access Denied"))
+            except Exception as e:
+                try:
+                    if hasattr(self, 'error_label') and self.error_label.winfo_exists():
+                        self.error_label.configure(text=f"Error: {e}")
+                except:
+                    print(f"Login Error: {e}")
         
-        except Exception as e:
-            self._show_error(f"Lỗi hệ thống: {str(e)}")
-        
-        finally:
-            self._set_loading(False)
-    
+        # Only re-enable button if login failed or didn't proceed
+        if self.winfo_exists():
+            self.login_btn.configure(text="Proceed to Dashboard  >", state="normal")
+            self.login_btn.configure(text="Proceed to Dashboard >", state="normal")
+
     def _handle_forgot_password(self):
-        """Xử lý click Forgot Password."""
         if self.on_forgot_password:
             self.on_forgot_password()
-        else:
-            # Navigate to reset password page
-            print("[DEBUG] Forgot password clicked - no handler assigned")
-            self._show_error("Tính năng đang phát triển")

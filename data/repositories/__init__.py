@@ -2,15 +2,16 @@
 Repositories Package - Data Access Objects
 ============================================
 
-Package chứa các repository classes:
+Package contains repository classes:
 - base_repository.py: Abstract base class
 - user_repository.py: User CRUD operations
 - classroom_repository.py: Classroom CRUD
 - attendance_repository.py: Attendance operations
+- password_reset_token_repository.py: Password reset token operations
 
-Repository Pattern: Tách biệt business logic và data access.
+Repository Pattern: Separates business logic from data access.
 
-Cách sử dụng:
+Usage:
     from data.repositories import UserRepository
     from data.database import Database
     
@@ -25,6 +26,7 @@ from .base_repository import BaseRepository
 from .user_repository import UserRepository
 from .classroom_repository import ClassroomRepository
 from .attendance_repository import AttendanceSessionRepository, AttendanceRecordRepository
+from .password_reset_token_repository import PasswordResetTokenRepository
 
 # Alias for compatibility
 ClassRepository = ClassroomRepository
@@ -36,4 +38,5 @@ __all__ = [
     "ClassRepository",  # Alias
     "AttendanceSessionRepository",
     "AttendanceRecordRepository",
+    "PasswordResetTokenRepository",
 ]

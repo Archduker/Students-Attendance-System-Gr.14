@@ -2,9 +2,9 @@
 Email Service - Email Sending
 =============================
 
-Service gửi email cho password reset, notifications.
+Service for sending emails for password reset, notifications.
 
-⚠️ LƯU Ý: Cần cấu hình SMTP credentials trong config/email.py
+⚠️ NOTE: Configure SMTP credentials in config/email.py
 """
 
 import smtplib
@@ -17,7 +17,7 @@ from config.email import get_email_config, is_email_configured, EMAIL_SUBJECTS
 
 class EmailService:
     """
-    Service gửi email.
+    Service for sending emails.
     
     Example:
         >>> email_service = EmailService()
@@ -25,7 +25,7 @@ class EmailService:
     """
     
     def __init__(self):
-        """Khởi tạo EmailService."""
+        """Initialize EmailService."""
         self.config = get_email_config()
         self._is_configured = is_email_configured()
         
@@ -33,7 +33,7 @@ class EmailService:
             print("⚠️ Warning: Email not configured. Set SENDER_EMAIL and SENDER_PASSWORD.")
     
     def _create_smtp_connection(self) -> smtplib.SMTP:
-        """Tạo SMTP connection."""
+        """Create SMTP connection."""
         server = smtplib.SMTP(self.config["server"], self.config["port"])
         
         if self.config.get("use_tls"):
@@ -50,16 +50,16 @@ class EmailService:
         is_html: bool = False
     ) -> bool:
         """
-        Gửi email.
+        Send email.
         
         Args:
-            to_email: Email người nhận
-            subject: Tiêu đề email
-            body: Nội dung email
-            is_html: True nếu body là HTML
+            to_email: Recipient email address
+            subject: Email subject
+            body: Email body content
+            is_html: True if body is HTML
             
         Returns:
-            True nếu gửi thành công
+            True if sent successfully
             
         Example:
             >>> email_service.send_email(
@@ -99,26 +99,26 @@ class EmailService:
     
     def send_password_reset_email(self, to_email: str, new_password: str) -> bool:
         """
-        Gửi email reset password.
+        Send password reset email.
         
         Args:
-            to_email: Email người nhận
-            new_password: Mật khẩu mới
+            to_email: Recipient email address
+            new_password: New password
             
         Returns:
-            True nếu gửi thành công
+            True if sent successfully
         """
         subject = EMAIL_SUBJECTS.get("password_reset", "Password Reset")
         
         body = f"""
         <html>
         <body>
-            <h2>🔐 Khôi phục mật khẩu</h2>
-            <p>Xin chào,</p>
-            <p>Mật khẩu mới của bạn là: <strong>{new_password}</strong></p>
-            <p>Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.</p>
+            <h2>🔐 Password Recovery</h2>
+            <p>Hello,</p>
+            <p>Your new password is: <strong>{new_password}</strong></p>
+            <p>Please login and change your password immediately after receiving this email.</p>
             <br>
-            <p>Trân trọng,<br>Student Attendance System</p>
+            <p>Best regards,<br>Student Attendance System</p>
         </body>
         </html>
         """
@@ -127,27 +127,27 @@ class EmailService:
     
     def send_welcome_email(self, to_email: str, full_name: str, username: str) -> bool:
         """
-        Gửi email chào mừng user mới.
+        Send welcome email to new user.
         
         Args:
-            to_email: Email người nhận
-            full_name: Tên đầy đủ
-            username: Tên đăng nhập
+            to_email: Recipient email address
+            full_name: Full name
+            username: Username
             
         Returns:
-            True nếu gửi thành công
+            True if sent successfully
         """
         subject = EMAIL_SUBJECTS.get("welcome", "Welcome")
         
         body = f"""
         <html>
         <body>
-            <h2>👋 Chào mừng {full_name}!</h2>
-            <p>Tài khoản của bạn đã được tạo thành công.</p>
-            <p><strong>Tên đăng nhập:</strong> {username}</p>
-            <p>Vui lòng liên hệ Admin để nhận mật khẩu.</p>
+            <h2>👋 Welcome {full_name}!</h2>
+            <p>Your account has been created successfully.</p>
+            <p><strong>Username:</strong> {username}</p>
+            <p>Please contact Admin to receive your password.</p>
             <br>
-            <p>Trân trọng,<br>Student Attendance System</p>
+            <p>Best regards,<br>Student Attendance System</p>
         </body>
         </html>
         """

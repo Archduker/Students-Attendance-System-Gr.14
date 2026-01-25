@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS users;
 -- ============================================================================
 -- USERS TABLE
 -- ============================================================================
--- Lưu trữ thông tin tất cả người dùng (Admin, Teacher, Student)
+-- Stores information for all users (Admin, Teacher, Student)
 CREATE TABLE users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
     username VARCHAR(256) NOT NULL UNIQUE,
@@ -27,29 +27,31 @@ CREATE TABLE users (
     full_name VARCHAR(256) NOT NULL,
     email VARCHAR(256),
     role TEXT CHECK(role IN ('ADMIN', 'TEACHER', 'STUDENT')) NOT NULL,
+    is_active INTEGER DEFAULT 1,  -- Account activation status (1=active, 0=locked)
     
     -- Role-specific fields (nullable)
-    admin_id CHAR(10),           -- Cho Admin
-    teacher_code CHAR(10),       -- Cho Teacher
-    student_code VARCHAR(10),    -- Cho Student
+    admin_id CHAR(10),           -- For Admin
+    teacher_code CHAR(10),       -- For Teacher
+    student_code VARCHAR(10),    -- For Student
     
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     
-    -- Indexes
+    -- Constraints
     UNIQUE(admin_id),
     UNIQUE(teacher_code),
     UNIQUE(student_code)
 );
 
--- Index cho tìm kiếm
+-- Indexes for search optimization
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_is_active ON users(is_active);
 
 -- ============================================================================
 -- CLASSES TABLE
 -- ============================================================================
--- Lưu trữ thông tin lớp học
+-- Stores class information
 CREATE TABLE classes (
     class_id CHAR(12) PRIMARY KEY,
     class_name VARCHAR(256) NOT NULL,
@@ -65,7 +67,7 @@ CREATE INDEX idx_classes_subject ON classes(subject_code);
 -- ============================================================================
 -- CLASSES_STUDENT TABLE (Junction Table)
 -- ============================================================================
--- Bảng liên kết sinh viên và lớp học (Many-to-Many)
+-- Links students to classes (Many-to-Many relationship)
 CREATE TABLE classes_student (
     class_id VARCHAR(12) NOT NULL,
     student_code CHAR(10) NOT NULL,
@@ -78,7 +80,7 @@ CREATE TABLE classes_student (
 -- ============================================================================
 -- ATTENDANCE_SESSIONS TABLE
 -- ============================================================================
--- Lưu trữ các phiên điểm danh
+-- Stores attendance sessions
 CREATE TABLE attendance_sessions (
     session_id VARCHAR(10) PRIMARY KEY,
     class_id CHAR(12) NOT NULL,
@@ -102,7 +104,7 @@ CREATE INDEX idx_sessions_token ON attendance_sessions(token);
 -- ============================================================================
 -- ATTENDANCE_RECORDS TABLE
 -- ============================================================================
--- Lưu trữ bản ghi điểm danh của từng sinh viên
+-- Stores individual student attendance records
 CREATE TABLE attendance_records (
     record_id VARCHAR(10) PRIMARY KEY,
     session_id VARCHAR(10) NOT NULL,
@@ -125,7 +127,7 @@ CREATE INDEX idx_records_status ON attendance_records(status);
 -- ============================================================================
 -- DASHBOARD TABLE
 -- ============================================================================
--- Lưu trữ thống kê dashboard
+-- Stores dashboard statistics
 CREATE TABLE dashboard (
     dashboard_id CHAR(1) PRIMARY KEY,
     user_id INTEGER NOT NULL,
@@ -136,3 +138,23 @@ CREATE TABLE dashboard (
     
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+
+-- ============================================================================
+-- PASSWORD_RESET_TOKENS TABLE
+-- ============================================================================
+-- Stores password reset tokens for secure password recovery
+CREATE TABLE password_reset_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    reset_token TEXT NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    is_used INTEGER DEFAULT 0,  -- 0=not used, 1=used
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE INDEX idx_reset_tokens_user ON password_reset_tokens(user_id);
+CREATE INDEX idx_reset_tokens_token ON password_reset_tokens(reset_token);
+CREATE INDEX idx_reset_tokens_expires ON password_reset_tokens(expires_at);
+

@@ -2,7 +2,7 @@
 Auth Controller - Authentication Controller
 ============================================
 
-Controller xử lý các request liên quan đến authentication.
+Controller handles authentication-related requests.
 """
 
 from typing import Dict, Any, Optional
@@ -14,7 +14,7 @@ from services import AuthService
 
 class AuthController:
     """
-    Controller xử lý authentication requests.
+    Controller handling authentication requests.
     
     Example:
         >>> auth_controller = AuthController(auth_service)
@@ -25,7 +25,7 @@ class AuthController:
     
     def __init__(self, auth_service: AuthService):
         """
-        Khởi tạo AuthController.
+        Initialize AuthController.
         
         Args:
             auth_service: AuthService instance
@@ -34,15 +34,15 @@ class AuthController:
     
     def handle_login(self, username: str, password: str, remember_me: bool = False) -> Dict[str, Any]:
         """
-        Xử lý login request.
+        Handle login request.
         
         Args:
-            username: Tên đăng nhập
-            password: Mật khẩu
-            remember_me: Ghi nhớ đăng nhập
+            username: Username or email
+            password: Password
+            remember_me: Remember login session
             
         Returns:
-            Dict với keys: success, user/error, role, token
+            Dict with keys: success, user/error, role, token
             
         Example:
             >>> result = controller.handle_login("admin", "123456")
@@ -53,13 +53,13 @@ class AuthController:
         if not username or not username.strip():
             return {
                 "success": False,
-                "error": "Vui lòng nhập tên đăng nhập"
+                "error": "Please enter username"
             }
         
         if not password:
             return {
                 "success": False,
-                "error": "Vui lòng nhập mật khẩu"
+                "error": "Please enter password"
             }
         
         try:
@@ -84,34 +84,34 @@ class AuthController:
         except Exception as e:
             return {
                 "success": False,
-                "error": f"Lỗi hệ thống: {str(e)}"
+                "error": f"System error: {str(e)}"
             }
     
     def handle_logout(self) -> Dict[str, Any]:
         """
-        Xử lý logout request.
+        Handle logout request.
         
         Returns:
-            Dict với key: success
+            Dict with key: success
         """
         self.auth_service.logout()
         return {"success": True}
     
     def handle_reset_password(self, email: str) -> Dict[str, Any]:
         """
-        Xử lý reset password request.
+        Handle password reset request.
         
         Args:
-            email: Email của user
+            email: User's email address
             
         Returns:
-            Dict với keys: success, message
+            Dict with keys: success, message
         """
         # Validate input
         if not email or not email.strip():
             return {
                 "success": False,
-                "message": "Vui lòng nhập email"
+                "message": "Please enter email address"
             }
         
         # Basic email validation
@@ -119,7 +119,7 @@ class AuthController:
         if "@" not in email or "." not in email:
             return {
                 "success": False,
-                "message": "Email không hợp lệ"
+                "message": "Invalid email address"
             }
         
         success, message = self.auth_service.reset_password(email)
@@ -135,39 +135,39 @@ class AuthController:
         confirm_password: str
     ) -> Dict[str, Any]:
         """
-        Xử lý change password request.
+        Handle password change request.
         
         Args:
-            old_password: Mật khẩu cũ
-            new_password: Mật khẩu mới
-            confirm_password: Xác nhận mật khẩu mới
+            old_password: Current password
+            new_password: New password
+            confirm_password: Confirm new password
             
         Returns:
-            Dict với keys: success, message
+            Dict with keys: success, message
         """
         # Validate input
         if not old_password:
             return {
                 "success": False,
-                "message": "Vui lòng nhập mật khẩu cũ"
+                "message": "Please enter current password"
             }
         
         if not new_password:
             return {
                 "success": False,
-                "message": "Vui lòng nhập mật khẩu mới"
+                "message": "Please enter new password"
             }
         
         if len(new_password) < 6:
             return {
                 "success": False,
-                "message": "Mật khẩu mới phải có ít nhất 6 ký tự"
+                "message": "New password must be at least 6 characters"
             }
         
         if new_password != confirm_password:
             return {
                 "success": False,
-                "message": "Xác nhận mật khẩu không khớp"
+                "message": "Password confirmation does not match"
             }
         
         # Get current user
@@ -175,7 +175,7 @@ class AuthController:
         if not current_user:
             return {
                 "success": False,
-                "message": "Vui lòng đăng nhập lại"
+                "message": "Please login again"
             }
         
         success, message = self.auth_service.change_password(
@@ -190,9 +190,9 @@ class AuthController:
         }
     
     def get_current_user(self) -> Optional[User]:
-        """Lấy user đang đăng nhập."""
+        """Get currently logged in user."""
         return self.auth_service.get_current_user()
     
     def is_authenticated(self) -> bool:
-        """Kiểm tra đã đăng nhập chưa."""
+        """Check if user is authenticated."""
         return self.auth_service.is_authenticated()

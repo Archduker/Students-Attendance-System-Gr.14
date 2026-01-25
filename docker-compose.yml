@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  # Database for Mantis
+  mantis-db:
+    image: mariadb:10.4
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=bugtracker
+      - MYSQL_USER=mantis
+      - MYSQL_PASSWORD=mantis
+    volumes:
+      - mantis_db_data:/var/lib/mysql
+    restart: always
+
+  # Mantis Bug Tracker
+  mantis:
+    image: mantisbt/mantisbt
+    ports:
+      - "8989:80"
+    environment:
+      - MANTIS_DB_TYPE=mysqli
+      - MANTIS_DB_HOSTNAME=mantis-db
+      - MANTIS_DB_DATABASE=bugtracker
+      - MANTIS_DB_USER=mantis
+      - MANTIS_DB_PASSWORD=mantis
+    depends_on:
+      - mantis-db
+    restart: always
+
+volumes:
+  mantis_db_data:

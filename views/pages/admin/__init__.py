@@ -1,23 +1,24 @@
 """
-Admin Module - Admin Pages
-===========================
-
-Module chứa các trang admin:
-- Login: Đăng nhập admin
-- Dashboard: Tổng quan hệ thống
-- User Management: Quản lý người dùng
-- Class Management: Quản lý lớp học
-- Reports: Báo cáo hệ thống
+Admin Pages - Export all admin pages
 """
 
-from .login import AdminLoginPage
 from .dashboard import AdminDashboard
-from .user_management import UserManagementPage
-from .class_management import ClassManagementPage
+from .reports import SystemReportsPage
+
+# Placeholder for pages not yet fully implemented
+try:
+    from .user_management import UserManagementPage
+except:
+    UserManagementPage = None
+
+try:
+    from .system_config import SystemConfigPage
+except:
+    SystemConfigPage = None
 
 __all__ = [
-    'AdminLoginPage',
     'AdminDashboard',
+    'SystemReportsPage',
     'UserManagementPage',
-    'ClassManagementPage',
+    'SystemConfigPage'
 ]

@@ -123,6 +123,15 @@ def run_gui(app_config: dict):
         from views.pages.auth.login_page import LoginPage
         from views.pages.auth.reset_password_page import ResetPasswordPage
         
+        # Student Views
+        from views.layouts.student_layout import StudentLayout
+        from views.pages.student import StudentDashboard, SubmitAttendancePage, AttendanceHistoryPage, ProfilePage
+        
+        # Teacher Views
+        from views.layouts.teacher_layout import TeacherLayout
+        from views.pages.teacher import TeacherDashboardPage, SessionManagementPage, SessionDetailPage, HistoryPage
+        from views.pages.teacher import ProfilePage as TeacherProfilePage
+        
         # Get auth controller from app config
         auth_controller = app_config["controllers"]["auth"]
         
@@ -150,17 +159,167 @@ def run_gui(app_config: dict):
                 on_back_to_login=show_login
             )
         
+        def show_student_app(user):
+            """Hiển thị giao diện sinh viên."""
+            if current_page[0]:
+                current_page[0].destroy()
+                
+            # Define navigation handler
+            def navigate(page_key):
+                # Clear content area
+                for child in layout.content_area.winfo_children():
+                    child.destroy()
+                
+                # Update layout state (but don't rebuild sidebar)
+                layout.current_path = page_key
+                
+                # Instantiate Page
+                if page_key == "dashboard":
+                    StudentDashboard(layout.content_area, on_navigate=navigate, user=user)
+                elif page_key == "submit_attendance":
+                    SubmitAttendancePage(layout.content_area, on_navigate=navigate)
+                elif page_key == "history":
+                    AttendanceHistoryPage(layout.content_area, on_navigate=navigate)
+                elif page_key == "profile":
+                    ProfilePage(layout.content_area, on_navigate=navigate, user=user)
+                elif page_key == "logout":
+                    auth_controller.handle_logout()
+                    show_login()
+
+            # Create Layout
+            layout = StudentLayout(root, on_navigate=navigate, user=user)
+            current_page[0] = layout
+            
+            # Show Dashboard
+            navigate("dashboard")
+
+        def show_teacher_app(user):
+            """Hiển thị giao diện giáo viên."""
+            if current_page[0]:
+                current_page[0].destroy()
+            
+            # Initialize teacher controller once
+            from controllers.teacher_controller import TeacherController
+            from data.repositories import ClassroomRepository, AttendanceRecordRepository
+            from services.attendance_session_service import AttendanceSessionService
+            from services.qr_service import QRService
+            
+            # Get database and repos
+            db = app_config["db"]
+            classroom_repo = ClassroomRepository(db)
+            record_repo = AttendanceRecordRepository(db)
+            
+            # Session repository
+            from data.repositories import AttendanceSessionRepository
+            session_repo = AttendanceSessionRepository(db)
+            
+            # Initialize services
+            qr_service = QRService(security_service=app_config["services"]["security"])
+            session_service = AttendanceSessionService(
+                session_repo=session_repo,
+                record_repo=record_repo,
+                classroom_repo=classroom_repo,
+                security_service=app_config["services"]["security"],
+                qr_service=qr_service
+            )
+            
+            # Initialize teacher controller
+            teacher_controller = TeacherController(
+                session_service=session_service,
+                auth_service=app_config["services"]["auth"],
+                classroom_repo=classroom_repo,
+                record_repo=record_repo
+            )
+                
+            # Define navigation handler
+            def navigate(page_key):
+                # Clear content area
+                for child in layout.content_area.winfo_children():
+                    child.destroy()
+                
+                # Update layout state (but don't rebuild sidebar)
+                layout.current_path = page_key 
+                
+                # Instantiate Page
+                if page_key == "dashboard":
+                    TeacherDashboardPage(layout.content_area, teacher=user, controller=teacher_controller)
+                elif page_key == "session_management":
+                    SessionManagementPage(layout.content_area, teacher=user, controller=teacher_controller)
+                elif page_key == "session_detail":
+                    SessionDetailPage(layout.content_area, session_id=None)
+                elif page_key == "history":
+                    HistoryPage(layout.content_area)
+                elif page_key == "profile":
+                    TeacherProfilePage(layout.content_area, teacher=user)
+                elif page_key == "logout":
+                    auth_controller.handle_logout()
+                    show_login()
+
+            # Create Layout
+            layout = TeacherLayout(root, on_navigate=navigate, user=user)
+            current_page[0] = layout
+            
+            # Show Dashboard
+            navigate("dashboard")
+
+        def show_admin_app(user):
+            """Hiển thị giao diện admin."""
+            if current_page[0]:
+                current_page[0].destroy()
+            
+            # Import admin components
+            from views.layouts.admin_layout import AdminLayout
+            from views.pages.admin import AdminDashboard, SystemReportsPage
+            
+            # Define navigation handler
+            def navigate(page_key):
+                # Clear content area
+                for child in layout.content_area.winfo_children():
+                    child.destroy()
+                
+                # Update layout state
+                layout.current_path = page_key
+                
+                # Instantiate Page
+                if page_key == "dashboard":
+                    AdminDashboard(layout.content_area, admin_user=user, controller=None)
+                elif page_key == "reports":
+                    SystemReportsPage(layout.content_area, admin_user=user, controller=None)
+                elif page_key == "user_management":
+                    # Placeholder - to be implemented
+                    import tkinter.messagebox as messagebox
+                    messagebox.showinfo("Coming Soon", "User Management page is under development")
+                elif page_key == "system_config":
+                    # Placeholder - to be implemented
+                    import tkinter.messagebox as messagebox
+                    messagebox.showinfo("Coming Soon", "System Config page is under development")
+                elif page_key == "logout":
+                    auth_controller.handle_logout()
+                    show_login()
+
+            # Create Layout
+            layout = AdminLayout(root, on_navigate=navigate, user=user)
+            current_page[0] = layout
+            
+            # Show Dashboard
+            navigate("dashboard")
+
         def on_login_success(user, remember_me):
             """Callback khi login thành công."""
             print(f"✅ Đăng nhập thành công: {user.full_name} ({user.role.value})")
-            print(f"   Remember me: {remember_me}")
-            # TODO: Navigate to dashboard based on role
-            # For now, just show a message
-            import tkinter.messagebox as messagebox
-            messagebox.showinfo(
-                "Đăng nhập thành công", 
-                f"Chào mừng {user.full_name}!\nRole: {user.role.value}"
-            )
+            
+            if user.role.value == "STUDENT":
+                show_student_app(user)
+            elif user.role.value == "TEACHER":
+                show_teacher_app(user)
+            elif user.role.value == "ADMIN":
+                show_admin_app(user)
+            else:
+                import tkinter.messagebox as messagebox
+                messagebox.showinfo(
+                    "Đăng nhập thành công", 
+                    f"Chào mừng {user.full_name}!\nRole: {user.role.value}\n(Vai trò không được hỗ trợ)"
+                )
         
         # Show login page
         show_login()

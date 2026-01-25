@@ -1,9 +1,9 @@
 """
-Security Service - Bảo mật
+Security Service - Security Operations
 ==========================
 
-Service xử lý các tác vụ bảo mật:
-- Hash và verify password
+Service handles security tasks:
+- Hash and verify passwords
 - Generate secure tokens
 - Generate session IDs
 """
@@ -17,7 +17,7 @@ import bcrypt
 
 class SecurityService:
     """
-    Service xử lý các tác vụ bảo mật.
+    Service handling security operations.
     
     Example:
         >>> security = SecurityService()
@@ -28,7 +28,7 @@ class SecurityService:
     
     def hash_password(self, password: str) -> str:
         """
-        Hash password với bcrypt.
+        Hash password with bcrypt.
         
         Args:
             password: Plaintext password
@@ -45,14 +45,14 @@ class SecurityService:
     
     def verify_password(self, password: str, hashed: str) -> bool:
         """
-        Verify password với hash.
+        Verify password against hash.
         
         Args:
-            password: Plaintext password cần verify
-            hashed: Hashed password từ database
+            password: Plaintext password to verify
+            hashed: Hashed password from database
             
         Returns:
-            True nếu password đúng
+            True if password matches
             
         Example:
             >>> security.verify_password("123456", hashed_password)
@@ -71,7 +71,7 @@ class SecurityService:
         Generate secure random token.
         
         Args:
-            length: Độ dài token (default: 32)
+            length: Token length (default: 32)
             
         Returns:
             Random token string
@@ -85,10 +85,10 @@ class SecurityService:
     
     def generate_code(self, length: int = 6) -> str:
         """
-        Generate numeric code (cho attendance).
+        Generate numeric code (for attendance).
         
         Args:
-            length: Độ dài code (default: 6)
+            length: Code length (default: 6)
             
         Returns:
             Numeric code string

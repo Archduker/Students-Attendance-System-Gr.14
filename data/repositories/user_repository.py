@@ -172,3 +172,48 @@ class UserRepository(BaseRepository[User]):
         query = f"UPDATE {self.table_name} SET password_hash = ? WHERE user_id = ?"
         cursor = self.db.execute(query, (new_password_hash, user_id))
         return cursor.rowcount > 0
+    
+    def create(self, data: Dict[str, Any]) -> User:
+        """
+        Create new user from dictionary data.
+        
+        Args:
+            data: Dictionary with user fields
+            
+        Returns:
+            Created User object
+            
+        Example:
+            >>> user = user_repo.create({
+            ...     "username": "john",
+            ...     "password_hash": "hash...",
+            ...     "full_name": "John Doe",
+            ...     "email": "john@example.com",
+            ...     "role": "STUDENT",
+            ...     "student_code": "ST001"
+            ... })
+        """
+        # Build columns and values
+        columns = ", ".join(data.keys())
+        placeholders = ", ".join(["?" for _ in data])
+        
+        query = f"INSERT INTO {self.table_name} ({columns}) VALUES ({placeholders})"
+        cursor = self.db.execute(query, tuple(data.values()))
+        
+        # Fetch and return the created user
+        user_id = cursor.lastrowid
+        return self.find_by_id(user_id)
+    
+    def find_by_id(self, user_id: int) -> Optional[User]:
+        """
+        Find user by ID.
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            User object or None
+        """
+        query = f"SELECT * FROM {self.table_name} WHERE user_id = ?"
+        row = self.db.fetch_one(query, (user_id,))
+        return self._row_to_entity(row) if row else None

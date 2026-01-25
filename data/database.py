@@ -65,8 +65,24 @@ class Database:
         self._connection = sqlite3.connect(
             str(db_path),
             timeout=CONNECTION_TIMEOUT,
-            check_same_thread=CHECK_SAME_THREAD
+            check_same_thread=CHECK_SAME_THREAD,
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
         )
+        
+        # Register datetime adapter for Python 3.12+
+        # This fixes the deprecation warning
+        from datetime import datetime
+        
+        def adapt_datetime(dt):
+            """Convert datetime to ISO format string."""
+            return dt.isoformat()
+        
+        def convert_datetime(val):
+            """Convert ISO format string to datetime."""
+            return datetime.fromisoformat(val.decode())
+        
+        sqlite3.register_adapter(datetime, adapt_datetime)
+        sqlite3.register_converter("DATETIME", convert_datetime)
         
         # Enable foreign keys
         self._connection.execute("PRAGMA foreign_keys = ON")

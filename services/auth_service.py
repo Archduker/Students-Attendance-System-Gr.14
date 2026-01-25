@@ -2,7 +2,7 @@
 Auth Service - Authentication & Authorization
 =============================================
 
-Service xử lý xác thực và phân quyền:
+Service handles authentication and authorization:
 - Login / Logout
 - Password reset
 - Session management
@@ -13,13 +13,13 @@ from typing import Optional, Tuple
 from core.enums import UserRole
 from core.models import User
 from core.exceptions import InvalidCredentialsError, UnauthorizedError
-from data.repositories import UserRepository
+from data.repositories import UserRepository, PasswordResetTokenRepository
 from .security_service import SecurityService
 from .session_service import SessionService
 
 class AuthService:
     """
-    Service xử lý authentication và authorization.
+    Service handling authentication and authorization.
     """
     
     def __init__(
@@ -30,7 +30,7 @@ class AuthService:
         email_service: Optional[object] = None
     ):
         """
-        Khởi tạo AuthService.
+        Initialize AuthService.
         
         Args:
             user_repo: UserRepository instance
@@ -46,30 +46,34 @@ class AuthService:
     
     def login(self, username: str, password: str, remember_me: bool = False) -> Tuple[User, str]:
         """
-        Đăng nhập vào hệ thống.
+        Login to the system.
         
         Args:
-            username: Tên đăng nhập
-            password: Mật khẩu
-            remember_me: Ghi nhớ đăng nhập
+            username: Username or email
+            password: Password
+            remember_me: Remember login session
             
         Returns:
             Tuple (User object, session_token)
             
         Raises:
-            InvalidCredentialsError: Nếu thông tin không đúng
+            InvalidCredentialsError: If credentials are invalid
         """
-        # Tìm user
+        # Find user (Login by Username OR Email)
         user = self.user_repo.find_by_username(username)
         
+        # If not found by username, try email
+        if not user and "@" in username:
+            user = self.user_repo.find_by_email(username)
+        
         if not user:
-            raise InvalidCredentialsError("Tên đăng nhập hoặc mật khẩu không đúng")
+            raise InvalidCredentialsError("Invalid username or password")
         
         # Verify password
         if not self.security.verify_password(password, user.password_hash):
-            raise InvalidCredentialsError("Tên đăng nhập hoặc mật khẩu không đúng")
+            raise InvalidCredentialsError("Invalid username or password")
         
-        # Lưu current user
+        # Store current user
         self._current_user = user
         
         # Create session
@@ -83,23 +87,23 @@ class AuthService:
         return user, token
     
     def logout(self) -> None:
-        """Đăng xuất khỏi hệ thống."""
+        """Logout from the system."""
         self._current_user = None
     
     def get_current_user(self) -> Optional[User]:
-        """Lấy user đang đăng nhập."""
+        """Get currently logged in user."""
         return self._current_user
     
     def is_authenticated(self) -> bool:
-        """Kiểm tra đã đăng nhập chưa."""
+        """Check if user is authenticated."""
         return self._current_user is not None
     
     def reset_password(self, email: str) -> Tuple[bool, str]:
         """
-        Reset password và gửi qua email.
+        Reset password and send via email.
         
         Args:
-            email: Email của user
+            email: User's email address
             
         Returns:
             Tuple (success, message)
@@ -107,31 +111,80 @@ class AuthService:
         Example:
             >>> success, msg = auth.reset_password("user@email.com")
         """
-        # Tìm user theo email
+        # Find user by email
         user = self.user_repo.find_by_email(email)
         
         if not user:
-            return False, "Email không tồn tại trong hệ thống"
+            return False, "Email does not exist in the system"
         
         # Generate new password
         new_password = self.security.generate_code(8)
         new_hash = self.security.hash_password(new_password)
         
-        # Update password trong database
+        # Update password in database
         success = self.user_repo.update_password(user.user_id, new_hash)
         
         if not success:
-            return False, "Không thể cập nhật mật khẩu"
+            return False, "Unable to update password"
         
-        # Gửi email (nếu có email service)
+        # DEMO ONLY: Print password to terminal
+        print("\n" + "="*50)
+        print(f"🔐 RESET PASSWORD REQUEST FOR: {email}")
+        print(f"🔑 NEW PASSWORD: {new_password}")
+        print("="*50 + "\n")
+        
+        # Send email (if email service available)
         if self.email:
             try:
                 self.email.send_password_reset_email(email, new_password)
             except Exception as e:
-                # Log error nhưng vẫn trả về success
+                # Log error but still return success
                 print(f"Warning: Could not send email: {e}")
         
-        return True, f"Mật khẩu mới đã được gửi đến {email}"
+        return True, f"New password has been generated (See Terminal)"
+    
+    def confirm_password_reset(self, reset_token: str, new_password: str) -> Tuple[bool, str]:
+        """
+        Confirm password reset using token.
+        
+        Args:
+            reset_token: Password reset token
+            new_password: New password to set
+            
+        Returns:
+            Tuple (success, message)
+            
+        Example:
+            >>> success, msg = auth.confirm_password_reset("token123", "newpass")
+        """
+        
+        # Get token repository
+        token_repo = PasswordResetTokenRepository(self.user_repo.db)
+        
+        # Validate token
+        token_data = token_repo.get_valid_token(reset_token)
+        
+        if not token_data:
+            return False, "Invalid or expired reset token"
+        
+        user_id = token_data["user_id"]
+        
+        # Hash new password
+        new_hash = self.security.hash_password(new_password)
+        
+        # Update password
+        success = self.user_repo.update_password(user_id, new_hash)
+        
+        if not success:
+            return False, "Unable to update password"
+        
+        # Mark token as used
+        token_repo.mark_token_as_used(reset_token)
+        
+        # Invalidate all other tokens for this user
+        token_repo.invalidate_all_user_tokens(user_id)
+        
+        return True, "Password reset successfully"
     
     def change_password(
         self, 
@@ -140,12 +193,12 @@ class AuthService:
         new_password: str
     ) -> Tuple[bool, str]:
         """
-        Đổi mật khẩu.
+        Change password.
         
         Args:
-            user_id: ID của user
-            old_password: Mật khẩu cũ
-            new_password: Mật khẩu mới
+            user_id: User ID
+            old_password: Current password
+            new_password: New password
             
         Returns:
             Tuple (success, message)
@@ -153,35 +206,35 @@ class AuthService:
         user = self.user_repo.find_by_id(user_id)
         
         if not user:
-            return False, "User không tồn tại"
+            return False, "User does not exist"
         
         # Verify old password
         if not self.security.verify_password(old_password, user.password_hash):
-            return False, "Mật khẩu cũ không đúng"
+            return False, "Current password is incorrect"
         
         # Update password
         new_hash = self.security.hash_password(new_password)
         success = self.user_repo.update_password(user_id, new_hash)
         
         if success:
-            return True, "Đổi mật khẩu thành công"
+            return True, "Password changed successfully"
         else:
-            return False, "Không thể cập nhật mật khẩu"
+            return False, "Unable to update password"
     
     def check_permission(self, required_role: UserRole) -> bool:
         """
-        Kiểm tra user có quyền không.
+        Check if user has required permission.
         
         Args:
-            required_role: Role cần có
+            required_role: Required role
             
         Returns:
-            True nếu có quyền
+            True if user has permission
         """
         if not self._current_user:
             return False
         
-        # Admin có tất cả quyền
+        # Admin has all permissions
         if self._current_user.role == UserRole.ADMIN:
             return True
         
@@ -189,15 +242,15 @@ class AuthService:
     
     def require_permission(self, required_role: UserRole) -> None:
         """
-        Yêu cầu quyền, raise error nếu không có.
+        Require permission, raise error if not authorized.
         
         Args:
-            required_role: Role cần có
+            required_role: Required role
             
         Raises:
-            UnauthorizedError: Nếu không có quyền
+            UnauthorizedError: If user doesn't have permission
         """
         if not self.check_permission(required_role):
             raise UnauthorizedError(
-                f"Bạn cần quyền {required_role.value} để thực hiện thao tác này"
+                f"You need {required_role.value} permission to perform this action"
             )

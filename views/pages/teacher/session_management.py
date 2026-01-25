@@ -3,6 +3,7 @@ Session Management Page - Quản lý phiên điểm danh
 =================================================
 
 Page quản lý các phiên điểm danh của giáo viên.
+Match UI from Image 2.
 """
 
 import customtkinter as ctk
@@ -13,294 +14,217 @@ from core.models import Teacher
 from core.models.attendance_session import AttendanceSession
 from controllers.teacher_controller import TeacherController
 
-
 class SessionManagementPage(ctk.CTkFrame):
     """
     Page quản lý sessions cho Teacher.
-    
-    Chức năng:
-    - Hiển thị danh sách sessions
-    - Filter theo lớp/trạng thái
-    - Xem chi tiết, đóng session
+    Matches Image 2 UI.
     """
     
     def __init__(self, parent, teacher: Teacher, controller: TeacherController):
-        """
-        Khởi tạo Session Management Page.
-        
-        Args:
-            parent: Parent widget
-            teacher: Teacher object
-            controller: TeacherController instance
-        """
-        super().__init__(parent)
+        super().__init__(parent, fg_color="transparent")
         
         self.teacher = teacher
         self.controller = controller
         self.sessions: List[AttendanceSession] = []
         
+        # Grid layout: Main Content (Left) + Quick Actions (Right)
+        self.grid_columnconfigure(0, weight=3)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        
         self._setup_ui()
-        self.load_sessions()
-    
+        # self.load_sessions() # Call to load real data
+
     def _setup_ui(self):
-        """Setup giao diện."""
-        # Configure grid
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        # --- Left Column: Header + Session List ---
+        self.left_col = ctk.CTkFrame(self, fg_color="transparent")
+        self.left_col.grid(row=0, column=0, sticky="nsew", padx=(0, 20))
         
-        # Header
-        header = ctk.CTkLabel(
-            self,
-            text="Quản lý phiên điểm danh",
-            font=ctk.CTkFont(size=24, weight="bold")
-        )
-        header.grid(row=0, column=0, padx=20, pady=20, sticky="w")
+        self._create_header(self.left_col)
+        self._create_session_list(self.left_col)
         
-        # Filter Frame
-        filter_frame = ctk.CTkFrame(self)
-        filter_frame.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
+        # --- Right Column: Quick Actions ---
+        self.right_col = ctk.CTkFrame(self, fg_color="transparent")
+        self.right_col.grid(row=0, column=1, sticky="n", pady=0)
         
-        # Class filter
-        ctk.CTkLabel(filter_frame, text="Lọc theo lớp:").pack(side="left", padx=10)
+        self._create_quick_actions(self.right_col)
+
+    def _create_header(self, parent):
+        # Header Container
+        header_frm = ctk.CTkFrame(parent, fg_color="transparent")
+        header_frm.pack(fill="x", pady=(0, 30))
         
-        self.class_filter = ctk.CTkComboBox(
-            filter_frame,
-            values=["Tất cả"],
-            command=self.on_filter_change,
-            width=200
-        )
-        self.class_filter.pack(side="left", padx=10)
+        # Title & Subtitle
+        title_area = ctk.CTkFrame(header_frm, fg_color="transparent")
+        title_area.pack(side="left")
         
-        # Status filter
-        ctk.CTkLabel(filter_frame, text="Trạng thái:").pack(side="left", padx=10)
+        ctk.CTkLabel(
+            title_area, 
+            text="Attendance Management", 
+            font=("Inter", 24, "bold"),
+            text_color="#0F172A"
+        ).pack(anchor="w")
         
-        self.status_filter = ctk.CTkComboBox(
-            filter_frame,
-            values=["Tất cả", "OPEN", "CLOSED"],
-            command=self.on_filter_change,
-            width=150
-        )
-        self.status_filter.pack(side="left", padx=10)
+        ctk.CTkLabel(
+            title_area,
+            text="Review lab sessions or manually update student status for cohorts (~60 students)",
+            font=("Inter", 12),
+            text_color="#94A3B8"
+        ).pack(anchor="w")
+
+        # Buttons (History, Manual Entry)
+        btn_area = ctk.CTkFrame(header_frm, fg_color="transparent")
+        btn_area.pack(side="right")
         
-        # Refresh button
-        refresh_btn = ctk.CTkButton(
-            filter_frame,
-            text="🔄 Refresh",
-            command=self.load_sessions,
-            width=100
-        )
-        refresh_btn.pack(side="right", padx=10)
+        # History Button (Dark)
+        ctk.CTkButton(
+            btn_area,
+            text="HISTORY",
+            fg_color="black",
+            text_color="white",
+            font=("Inter", 11, "bold"),
+            width=80,
+            height=32,
+            corner_radius=16,
+            hover_color="#333"
+        ).pack(side="left", padx=(0, 10))
         
-        # Sessions List Frame
-        self.sessions_frame = ctk.CTkScrollableFrame(self, height=400)
-        self.sessions_frame.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
-        self.sessions_frame.grid_columnconfigure(0, weight=1)
+        # Manual Entry Button (Outline)
+        ctk.CTkButton(
+            btn_area,
+            text="MANUAL ENTRY",
+            fg_color="transparent",
+            border_width=1,
+            border_color="#E2E8F0",
+            text_color="#64748B",
+            font=("Inter", 11, "bold"),
+            width=100,
+            height=32,
+            corner_radius=16,
+            hover_color="#F1F5F9"
+        ).pack(side="left")
+
+    def _create_session_list(self, parent):
+        # Container Card
+        container = ctk.CTkFrame(parent, fg_color="white", corner_radius=15)
+        container.pack(fill="both", expand=True)
         
-        # Action Buttons
-        button_frame = ctk.CTkFrame(self)
-        button_frame.grid(row=3, column=0, padx=20, pady=20, sticky="ew")
+        # Top Bar (Title + Search)
+        top_bar = ctk.CTkFrame(container, fg_color="transparent")
+        top_bar.pack(fill="x", padx=30, pady=25)
         
-        new_session_btn = ctk.CTkButton(
-            button_frame,
-            text="➕ Tạo phiên mới",
-            command=self.on_create_session,
-            width=150
-        )
-        new_session_btn.pack(side="left", padx=10)
-    
-    def load_sessions(self):
-        """Load danh sách sessions."""
-        try:
-            # Get sessions from controller
-            self.sessions = self.controller.get_session_list(self.teacher)
-            
-            # Update class filter options
-            classes = list(set(s.class_id for s in self.sessions))
-            self.class_filter.configure(values=["Tất cả"] + classes)
-            
-            # Apply current filters
-            self.apply_filters()
-            
-        except Exception as e:
-            print(f"Error loading sessions: {e}")
-            self._show_error("Không thể tải danh sách phiên điểm danh")
-    
-    def apply_filters(self):
-        """Áp dụng bộ lọc và hiển thị sessions."""
-        # Clear current display
-        for widget in self.sessions_frame.winfo_children():
-            widget.destroy()
+        ctk.CTkLabel(
+            top_bar,
+            text="RECENT SESSIONS",
+            font=("Inter", 12, "bold"),
+            text_color="#94A3B8"
+        ).pack(side="left")
         
-        # Get filter values
-        class_filter = self.class_filter.get()
-        status_filter = self.status_filter.get()
+        # Search Box
+        search_frm = ctk.CTkFrame(top_bar, fg_color="transparent", border_width=1, border_color="#E2E8F0", corner_radius=20, width=200, height=35)
+        search_frm.pack(side="right")
+        search_frm.pack_propagate(False)
         
-        # Filter sessions
-        filtered_sessions = self.sessions
+        ctk.CTkLabel(search_frm, text="🔍", font=("Arial", 12), text_color="#94A3B8").pack(side="left", padx=(10, 5))
+        ctk.CTkEntry(search_frm, placeholder_text="Find session", border_width=0, fg_color="transparent", height=30, font=("Inter", 12)).pack(fill="x", padx=5)
+
+        # Column Headers
+        headers = ctk.CTkFrame(container, fg_color="#F8FAFC", height=40, corner_radius=0)
+        headers.pack(fill="x", padx=1) # Thin border effect if bg is different
         
-        if class_filter != "Tất cả":
-            filtered_sessions = [s for s in filtered_sessions if s.class_id == class_filter]
+        # Use grid for columns
+        headers.grid_columnconfigure(0, weight=2) # Course
+        headers.grid_columnconfigure(1, weight=1) # Date
+        headers.grid_columnconfigure(2, weight=1) # Headcount
         
-        if status_filter != "Tất cả":
-            filtered_sessions = [s for s in filtered_sessions if s.status.value == status_filter]
+        ctk.CTkLabel(headers, text="COURSE", font=("Inter", 10, "bold"), text_color="#94A3B8").grid(row=0, column=0, sticky="w", padx=30, pady=10)
+        ctk.CTkLabel(headers, text="DATE", font=("Inter", 10, "bold"), text_color="#94A3B8").grid(row=0, column=1, sticky="w", padx=10)
+        ctk.CTkLabel(headers, text="HEADCOUNT", font=("Inter", 10, "bold"), text_color="#94A3B8").grid(row=0, column=2, sticky="e", padx=30)
         
-        # Display filtered sessions
-        if not filtered_sessions:
-            no_data_label = ctk.CTkLabel(
-                self.sessions_frame,
-                text="Không có phiên nào phù hợp",
-                font=ctk.CTkFont(size=14)
-            )
-            no_data_label.pack(padx=20, pady=50)
-            return
+        # List Items Area (Scrollable if needed, using frame for now)
+        list_area = ctk.CTkScrollableFrame(container, fg_color="transparent")
+        list_area.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Create session cards
-        for session in filtered_sessions:
-            card = self._create_session_card(self.sessions_frame, session)
-            card.pack(fill="x", padx=10, pady=5)
-    
-    def _create_session_card(self, parent, session: AttendanceSession) -> ctk.CTkFrame:
-        """
-        Tạo card hiển thị session.
+        # Mock Data Items
+        self._add_session_item(list_area, "Machine Learning", "CLOSED", "Jan 5th, 2026", 56, 60)
+        self._add_session_item(list_area, "Big Data Analysis", "ACTIVE", "Jan 5th, 2026", 52, 60)
+        # Add more if needed
+
+    def _add_session_item(self, parent, course_name, status, date_str, current, max_students):
+        item = ctk.CTkFrame(parent, fg_color="transparent", height=70)
+        item.pack(fill="x", pady=5)
         
-        Args:
-            parent: Parent widget
-            session: AttendanceSession object
-            
-        Returns:
-            CTkFrame chứa session info
-        """
-        card = ctk.CTkFrame(parent)
-        card.grid_columnconfigure(0, weight=1)
+        item.grid_columnconfigure(0, weight=2)
+        item.grid_columnconfigure(1, weight=1)
+        item.grid_columnconfigure(2, weight=1)
         
-        # Row 1: Session Info
-        info_frame = ctk.CTkFrame(card, fg_color="transparent")
-        info_frame.grid(row=0, column=0, padx=15, pady=10, sticky="ew")
-        info_frame.grid_columnconfigure(0, weight=1)
+        # 1. Course Info
+        course_frame = ctk.CTkFrame(item, fg_color="transparent")
+        course_frame.grid(row=0, column=0, sticky="w", padx=20)
         
-        # Session ID and Class
-        title_text = f"📝 {session.session_id} | 📚 {session.class_id}"
-        title_label = ctk.CTkLabel(
-            info_frame,
-            text=title_text,
-            font=ctk.CTkFont(size=14, weight="bold"),
-            anchor="w"
-        )
-        title_label.grid(row=0, column=0, sticky="w")
+        ctk.CTkLabel(course_frame, text=course_name, font=("Inter", 13, "bold"), text_color="#0F172A").pack(anchor="w")
         
-        # Time info
-        time_text = f"⏰ {session.start_time.strftime('%Y-%m-%d %H:%M')} - {session.end_time.strftime('%H:%M')}"
-        time_label = ctk.CTkLabel(
-            info_frame,
-            text=time_text,
-            font=ctk.CTkFont(size=12),
-            anchor="w"
-        )
-        time_label.grid(row=1, column=0, sticky="w", pady=5)
+        status_color = "#94A3B8" if status == "CLOSED" else "#22C55E" # Green for Active
+        ctk.CTkLabel(course_frame, text=status, font=("Inter", 10, "bold"), text_color=status_color).pack(anchor="w")
+
+        # 2. Date
+        ctk.CTkLabel(item, text=date_str, font=("Inter", 12, "bold"), text_color="#334155").grid(row=0, column=1, sticky="w", padx=10)
         
-        # Method and Status
-        method_text = f"🔧 {session.method.value}"
-        status_color = "#4CAF50" if session.is_open() else "#9E9E9E"
-        status_text = "🟢 OPEN" if session.is_open() else "⚫ CLOSED"
+        # 3. Headcount (Progress bar style)
+        count_frame = ctk.CTkFrame(item, fg_color="transparent")
+        count_frame.grid(row=0, column=2, sticky="e", padx=20)
         
-        details_text = f"{method_text} | {status_text}"
-        details_label = ctk.CTkLabel(
-            info_frame,
-            text=details_text,
-            font=ctk.CTkFont(size=12),
-            anchor="w",
-            text_color=status_color
-        )
-        details_label.grid(row=2, column=0, sticky="w")
+        # Text 56/60
+        ctk.CTkLabel(count_frame, text=f"{current}/{max_students}", font=("Inter", 12, "bold"), text_color="#334155").pack(anchor="e")
         
-        # Row 2: Action Buttons
-        action_frame = ctk.CTkFrame(card, fg_color="transparent")
-        action_frame.grid(row=1, column=0, padx=15, pady=(5, 10), sticky="ew")
+        # Progress Bar visual
+        # Background bar
+        bg_bar = ctk.CTkFrame(count_frame, height=6, width=100, fg_color="#E2E8F0", corner_radius=3)
+        bg_bar.pack(anchor="e", pady=(5,0))
+        bg_bar.pack_propagate(False)
         
-        # View Details button
-        view_btn = ctk.CTkButton(
-            action_frame,
-            text="👁️ Xem chi tiết",
-            command=lambda: self.on_view_details(session),
-            width=120,
-            height=30
-        )
-        view_btn.pack(side="left", padx=5)
+        # Fill bar
+        pct = current / max_students
+        fill_width = int(100 * pct)
+        fill_bar = ctk.CTkFrame(bg_bar, height=6, width=fill_width, fg_color="#6366F1", corner_radius=3)
+        fill_bar.place(x=0, y=0)
+
+        # Separator line
+        sep = ctk.CTkFrame(parent, height=1, fg_color="#F1F5F9")
+        sep.pack(fill="x", padx=20)
+
+    def _create_quick_actions(self, parent):
+        ctk.CTkLabel(
+            parent,
+            text="QUICK ACTIONS",
+            font=("Inter", 11, "bold"),
+            text_color="#94A3B8"
+        ).pack(fill="x", padx=10, pady=(20, 15), anchor="w")
         
-        # Close Session button (only if open)
-        if session.is_open():
-            close_btn = ctk.CTkButton(
-                action_frame,
-                text="🔒 Đóng phiên",
-                command=lambda: self.on_close_session(session),
-                width=120,
-                height=30,
-                fg_color="#FF5722"
-            )
-            close_btn.pack(side="left", padx=5)
+        # Action Cards
+        self._add_action_card(parent, "QR Lab Key", "SESSION START", "🔳", "#EEF2FF", "#6366F1")
+        self._add_action_card(parent, "Remote Link", "HYBRID MODE", "🔗", "#Ffff", "#000") # Simple white
+        self._add_action_card(parent, "Bulk CSV", "9C9DA2", "📄", "#FFF", "#000")
+
+    def _add_action_card(self, parent, title, subtitle, icon, bg_color_icon, icon_color):
+        card = ctk.CTkFrame(parent, fg_color="white", corner_radius=15, height=90)
+        card.pack(fill="x", pady=8)
+        card.pack_propagate(False)
         
-        return card
-    
-    def on_filter_change(self, value):
-        """Handler khi thay đổi filter."""
-        self.apply_filters()
-    
-    def on_create_session(self):
-        """Handler tạo phiên mới."""
-        print("Create new session clicked")
-        # TODO: Open CreateSessionDialog
-    
-    def on_view_details(self, session: AttendanceSession):
-        """
-        Handler xem chi tiết session.
+        # Icon
+        # If bg_color_icon is meant for valid color string
+        icon_box = ctk.CTkFrame(card, width=50, height=50, fg_color="#F8FAFC", corner_radius=12) # Default placeholder bg
+        icon_box.pack(side="left", padx=20)
+        # Apply specific color if needed
+        # ...
         
-        Args:
-            session: AttendanceSession object
-        """
-        print(f"View details for session: {session.session_id}")
-        # TODO: Open session details view or modal
-    
-    def on_close_session(self, session: AttendanceSession):
-        """
-        Handler đóng session.
+        ctk.CTkLabel(icon_box, text=icon, font=("Arial", 20), text_color=icon_color).place(relx=0.5, rely=0.5, anchor="center")
         
-        Args:
-            session: AttendanceSession object
-        """
-        # Confirm dialog
-        confirm = self._show_confirm(
-            f"Bạn có chắc muốn đóng phiên {session.session_id}?"
-        )
+        # Text
+        text_box = ctk.CTkFrame(card, fg_color="transparent")
+        text_box.pack(side="left", fill="y", pady=20)
         
-        if confirm:
-            success, message = self.controller.close_session(self.teacher, session.session_id)
-            
-            if success:
-                self._show_info("Đóng phiên thành công")
-                self.load_sessions()
-            else:
-                self._show_error(message)
-    
-    def _show_error(self, message: str):
-        """Hiển thị error message."""
-        print(f"ERROR: {message}")
-        # TODO: Implement proper error dialog
-    
-    def _show_info(self, message: str):
-        """Hiển thị info message."""
-        print(f"INFO: {message}")
-        # TODO: Implement proper info dialog
-    
-    def _show_confirm(self, message: str) -> bool:
-        """
-        Hiển thị confirm dialog.
+        ctk.CTkLabel(text_box, text=title, font=("Inter", 12, "bold"), text_color="#0F172A").pack(anchor="w")
         
-        Args:
-            message: Confirmation message
-            
-        Returns:
-            True if confirmed
-        """
-        print(f"CONFIRM: {message}")
-        # TODO: Implement proper confirm dialog
-        return True  # Placeholder
+        subtitle_color = "#6366F1" if "SESSION START" in subtitle else "#94A3B8"
+        ctk.CTkLabel(text_box, text=subtitle, font=("Inter", 10, "bold"), text_color=subtitle_color).pack(anchor="w")
