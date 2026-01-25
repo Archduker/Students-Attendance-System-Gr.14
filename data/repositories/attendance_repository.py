@@ -30,17 +30,23 @@ class AttendanceSessionRepository(BaseRepository[AttendanceSession]):
     
     def _row_to_entity(self, row) -> AttendanceSession:
         """Chuyển đổi row thành AttendanceSession."""
+        # Safely get optional fields from sqlite3.Row
+        attendance_link = row["attendance_link"] if "attendance_link" in row.keys() else None
+        token = row["token"] if "token" in row.keys() else None
+        qr_window = row["qr_window_minutes"] if "qr_window_minutes" in row.keys() else 1
+        late_window = row["late_window_minutes"] if "late_window_minutes" in row.keys() else 15
+        
         return AttendanceSession(
             session_id=row["session_id"],
             class_id=row["class_id"],
-            start_time=datetime.fromisoformat(row["start_time"]),
-            end_time=datetime.fromisoformat(row["end_time"]),
+            start_time=datetime.fromisoformat(row["start_time"]) if isinstance(row["start_time"], str) else row["start_time"],
+            end_time=datetime.fromisoformat(row["end_time"]) if isinstance(row["end_time"], str) else row["end_time"],
             method=AttendanceMethod.from_string(row["attendance_method"]),
             status=SessionStatus(row["status"]),
-            attendance_link=row.get("attendance_link"),
-            token=row.get("token"),
-            qr_window_minutes=row.get("qr_window_minutes", 1),
-            late_window_minutes=row.get("late_window_minutes", 15),
+            attendance_link=attendance_link,
+            token=token,
+            qr_window_minutes=qr_window,
+            late_window_minutes=late_window,
         )
     
     def _entity_to_dict(self, entity: AttendanceSession) -> Dict[str, Any]:
@@ -99,8 +105,14 @@ class AttendanceRecordRepository(BaseRepository[AttendanceRecord]):
     def _row_to_entity(self, row) -> AttendanceRecord:
         """Chuyển đổi row thành AttendanceRecord."""
         attendance_time = None
-        if row.get("attendance_time"):
-            attendance_time = datetime.fromisoformat(row["attendance_time"])
+        if "attendance_time" in row.keys() and row["attendance_time"]:
+            att_time_val = row["attendance_time"]
+            if isinstance(att_time_val, str):
+                attendance_time = datetime.fromisoformat(att_time_val)
+            else:
+                attendance_time = att_time_val
+        
+        remark = row["remark"] if "remark" in row.keys() else None
         
         return AttendanceRecord(
             record_id=row["record_id"],
@@ -108,7 +120,7 @@ class AttendanceRecordRepository(BaseRepository[AttendanceRecord]):
             student_code=row["student_code"],
             status=AttendanceStatus.from_string(row["status"]),
             attendance_time=attendance_time,
-            remark=row.get("remark"),
+            remark=remark,
         )
     
     def _entity_to_dict(self, entity: AttendanceRecord) -> Dict[str, Any]:

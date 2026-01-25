@@ -3,136 +3,184 @@ Teacher Dashboard - Dashboard Page for Teachers
 ================================================
 
 Dashboard hiển thị thống kê và thông tin cho giáo viên.
-Match UI from Image 1.
+Theo đúng UI/UX requirements.
 """
 
 import customtkinter as ctk
 import tkinter as tk
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 
-# Assuming these exist or will serve as placeholders
 from core.models import Teacher
 from controllers.teacher_controller import TeacherController
+
 
 class TeacherDashboardPage(ctk.CTkFrame):
     """
     Dashboard page cho Teacher.
-    Matches Image 1 UI.
+    Hiển thị thống kê và lịch giảng dạy.
     """
     
     def __init__(self, parent, teacher: Teacher, controller: TeacherController):
         super().__init__(parent, fg_color="transparent")
+        self.pack(expand=True, fill="both")
         
         self.teacher = teacher
         self.controller = controller
         
         # Grid layout: Main Content (Left) + Side Panel (Right)
-        self.grid_columnconfigure(0, weight=3) # Main content
-        self.grid_columnconfigure(1, weight=1) # Side panel (Class Roadmap)
+        self.grid_columnconfigure(0, weight=3)  # Main content
+        self.grid_columnconfigure(1, weight=1)  # Side panel (Class Roadmap)
         self.grid_rowconfigure(0, weight=1)
         
         self._setup_ui()
-        # self.load_data() # Call to load dynamic data
-
+    
     def _setup_ui(self):
+        """Setup UI components"""
         # --- Left Column: Stats & Graph ---
         self.left_col = ctk.CTkFrame(self, fg_color="transparent")
         self.left_col.grid(row=0, column=0, sticky="nsew", padx=(0, 20))
         
-        # 1. Stats Row
-        self._create_stats_row(self.left_col)
+        # 1. Faculty Load Header
+        self._create_header(self.left_col)
         
-        # 2. Graph Section
-        self._create_graph_section(self.left_col)
+        # 2. Statistics Cards
+        self._create_stats_cards(self.left_col)
+        
+        # 3. Attendance Load Chart
+        self._create_chart_section(self.left_col)
         
         # --- Right Column: Class Roadmap ---
         self._create_roadmap_panel(self)
-
-    def _create_stats_row(self, parent):
-        # Title / Subtitle
-        # In the image, there is a purple tag "DS FACULTY LOAD: 3 SUBJECTS"
-        # and "You have 2 classes in today's session"
-        
+    
+    def _create_header(self, parent):
+        """Create Faculty Load header"""
         header_frame = ctk.CTkFrame(parent, fg_color="transparent")
         header_frame.pack(fill="x", pady=(0, 20))
         
-        tag = ctk.CTkLabel(
-            header_frame, 
-            text="● DS FACULTY LOAD: 3 SUBJECTS", 
-            text_color="#A855F7", # Purple-500
+        # Faculty Load badge
+        badge = ctk.CTkLabel(
+            header_frame,
+            text="● DS FACULTY LOAD: 3 SUBJECTS",
+            text_color="#A855F7",  # Purple
             font=("Inter", 12, "bold"),
             anchor="w"
         )
-        tag.pack(fill="x")
+        badge.pack(fill="x")
         
-        sub = ctk.CTkLabel(
+        # Subtitle
+        subtitle = ctk.CTkLabel(
             header_frame,
             text="You have 2 classes in today's session",
-            text_color="#64748B",
+            text_color="#64748B",  # Gray
             font=("Inter", 12),
             anchor="w"
         )
-        sub.pack(fill="x", pady=(5, 0))
-
-        # Stats Cards Container
+        subtitle.pack(fill="x", pady=(5, 0))
+    
+    def _create_stats_cards(self, parent):
+        """Create 4 statistic cards"""
         stats_container = ctk.CTkFrame(parent, fg_color="transparent")
         stats_container.pack(fill="x", pady=10)
         
-        # 4 Cards
-        # 1. Assigned Subject
-        self._add_stat_card(stats_container, "ASSIGNED SUBJECT", "14", "📖", "#6366F1", side="left")
-        # 2. Unique Student
-        self._add_stat_card(stats_container, "UNIQUE STUDENT", "180", "👥", "#0EA5E9", side="left")
-        # 3. Avg Attendance
-        self._add_stat_card(stats_container, "AVG ATTENDANCE", "5%", "📈", "#F59E0B", side="left")
-        # 4. Avg Attendance %
-        self._add_stat_card(stats_container, "AVG ATTENDANCE", "94.2%", "💓", "#10B981", side="left")
-
-    def _add_stat_card(self, parent, title, value, icon, icon_color, side="left"):
-        card = ctk.CTkFrame(parent, fg_color="white", corner_radius=15)
-        card.pack(side=side, expand=True, fill="both", padx=5)
+        # Configure grid for 4 equal columns
+        for i in range(4):
+            stats_container.grid_columnconfigure(i, weight=1, uniform="stats")
         
-        # Inner layout
-        content = ctk.CTkFrame(card, fg_color="transparent")
-        content.pack(padx=20, pady=20, fill="both")
-        
-        # Icon Area (Left)
-        icon_lbl = ctk.CTkLabel(
-            content, 
-            text=icon, 
-            font=("Arial", 24),
-            text_color=icon_color,
-            width=40 
+        # Card 1: ASSIGNED SUBJECT
+        self._add_stat_card(
+            stats_container, 
+            row=0, col=0,
+            title="ASSIGNED SUBJECT",
+            value="14",
+            icon="📖",
+            icon_color="#6366F1",
+            icon_bg="#EEF2FF"
         )
-        icon_lbl.pack(side="left", padx=(0, 10))
         
-        # Text Area (Right)
-        text_area = ctk.CTkFrame(content, fg_color="transparent")
-        text_area.pack(side="left")
+        # Card 2: UNIQUE STUDENT
+        self._add_stat_card(
+            stats_container,
+            row=0, col=1,
+            title="UNIQUE STUDENT",
+            value="180",
+            icon="👥",
+            icon_color="#0EA5E9",
+            icon_bg="#E0F2FE"
+        )
+        
+        # Card 3: AVG ATTENDANCE
+        self._add_stat_card(
+            stats_container,
+            row=0, col=2,
+            title="AVG ATTENDANCE",
+            value="5%",
+            icon="📈",
+            icon_color="#F59E0B",
+            icon_bg="#FEF3C7"
+        )
+        
+        # Card 4: AVG ATTENDANCE
+        self._add_stat_card(
+            stats_container,
+            row=0, col=3,
+            title="AVG ATTENDANCE",
+            value="94.2%",
+            icon="💓",
+            icon_color="#10B981",
+            icon_bg="#D1FAE5"
+        )
+    
+    def _add_stat_card(self, parent, row, col, title, value, icon, icon_color, icon_bg):
+        """Add a single statistic card"""
+        card = ctk.CTkFrame(parent, fg_color="white", corner_radius=15)
+        card.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
+        
+        # Inner padding
+        inner = ctk.CTkFrame(card, fg_color="transparent")
+        inner.pack(padx=20, pady=20, fill="both", expand=True)
+        
+        # Icon (Left side)
+        icon_frame = ctk.CTkFrame(inner, fg_color=icon_bg, width=48, height=48, corner_radius=12)
+        icon_frame.pack(side="left", padx=(0, 12))
+        icon_frame.pack_propagate(False)
+        
+        icon_lbl = ctk.CTkLabel(
+            icon_frame,
+            text=icon,
+            font=("Arial", 20),
+            text_color=icon_color
+        )
+        icon_lbl.place(relx=0.5, rely=0.5, anchor="center")
+        
+        # Text (Right side)
+        text_area = ctk.CTkFrame(inner, fg_color="transparent")
+        text_area.pack(side="left", fill="both", expand=True)
         
         ctk.CTkLabel(
-            text_area, 
-            text=title, 
+            text_area,
+            text=title,
             font=("Inter", 10, "bold"),
-            text_color="#94A3B8"
+            text_color="#94A3B8",
+            anchor="w"
         ).pack(anchor="w")
         
         ctk.CTkLabel(
-            text_area, 
-            text=value, 
-            font=("Inter", 20, "bold"),
-            text_color="#1E293B"
-        ).pack(anchor="w")
-
-    def _create_graph_section(self, parent):
-        graph_card = ctk.CTkFrame(parent, fg_color="white", corner_radius=15, height=400)
-        graph_card.pack(fill="x", pady=20)
-        graph_card.pack_propagate(False) # Force height
+            text_area,
+            text=value,
+            font=("Inter", 24, "bold"),
+            text_color="#1E293B",
+            anchor="w"
+        ).pack(anchor="w", pady=(2, 0))
+    
+    def _create_chart_section(self, parent):
+        """Create Attendance Load Chart"""
+        chart_card = ctk.CTkFrame(parent, fg_color="white", corner_radius=15)
+        chart_card.pack(fill="both", expand=True, pady=(15, 0))
         
-        # Graph Header
-        header = ctk.CTkFrame(graph_card, fg_color="transparent")
-        header.pack(fill="x", padx=25, pady=20)
+        # Chart Header
+        header = ctk.CTkFrame(chart_card, fg_color="transparent")
+        header.pack(fill="x", padx=25, pady=(20, 10))
         
         ctk.CTkLabel(
             header,
@@ -141,120 +189,186 @@ class TeacherDashboardPage(ctk.CTkFrame):
             text_color="#1E293B"
         ).pack(side="left")
         
-        ctk.CTkLabel(
+        badge = ctk.CTkLabel(
             header,
             text="ACTIVE TELEMETRY",
-            font=("Inter", 10, "bold"),
+            font=("Inter", 9, "bold"),
             text_color="#6366F1",
             fg_color="#EEF2FF",
             corner_radius=5,
-            width=120,
-            height=25
-        ).pack(side="right")
+            width=130,
+            height=24
+        )
+        badge.pack(side="right")
         
-        # Canvas for Graph Drawing
+        # Canvas for Chart
         self.canvas = tk.Canvas(
-            graph_card, 
-            bg="white", 
+            chart_card,
+            bg="white",
             highlightthickness=0,
             height=300
         )
-        self.canvas.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        self.canvas.pack(fill="both", expand=True, padx=25, pady=(10, 20))
         
-        # Draw Mock Graph
-        self._draw_mock_graph()
-
-    def _draw_mock_graph(self):
-        w = 800 # approximate available width
-        h = 300
-        padding = 40
-        
-        # Axes
-        self.canvas.create_line(padding, h-padding, w-padding, h-padding, fill="#E2E8F0", width=1) # X axis
-        self.canvas.create_line(padding, padding, padding, h-padding, fill="#E2E8F0", width=1) # Y axis
-        
-        # Grid lines (Horizontal)
-        for i in range(4):
-            y = padding + (h-2*padding) * i / 3
-            self.canvas.create_line(padding, y, w-padding, y, fill="#F1F5F9", width=1, dash=(5, 5))
+        # Draw chart after canvas is rendered (with longer delay for initial render)
+        self.canvas.after(300, self._draw_chart)
+    
+    def _draw_chart(self):
+        """Draw attendance load line chart"""
+        try:
+            w = self.canvas.winfo_width()
+            h = self.canvas.winfo_height()
             
-        # Data points (Mocking the curve in image)
-        # Mon, Tue, Wed, Thu, Fri, Sat
-        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-        points = [
-            (0, 120),  # Mon (High)
-            (1, 60),   # Tue
-            (2, 55),   # Wed
-            (3, 70),   # Thu
-            (4, 80),   # Fri
-            (5, 60)    # Sat
-        ]
-        
-        # Scale mapping
-        x_step = (w - 2*padding) / (len(days) - 1)
-        y_max = 150
-        
-        canvas_points = []
-        for i, val in points:
-            x = padding + i * x_step
-            y = (h - padding) - (val / y_max * (h - 2*padding))
-            canvas_points.append((x, y))
+            # If canvas not ready yet, retry after a delay
+            if w <= 1 or h <= 1:
+                self.canvas.after(200, self._draw_chart)
+                return
             
-            # X Labels
-            self.canvas.create_text(x, h-padding+15, text=days[i], fill="#94A3B8", font=("Arial", 10))
-
-        # Y Labels (approx)
-        for i in range(4):
-            y = padding + (h-2*padding) * i / 3
-            val = y_max - (i/3 * y_max)
-            self.canvas.create_text(padding-20, y, text=str(int(val)), fill="#94A3B8", font=("Arial", 10))
-
-        # Draw Smoothish Line (Polyline for simplicity)
-        # To make it smooth like the image would require bezier curves, stick to lines for MVP or simple smooth
-        # Simple line
-        for i in range(len(canvas_points) - 1):
-            x1, y1 = canvas_points[i]
-            x2, y2 = canvas_points[i+1]
-            self.canvas.create_line(x1, y1, x2, y2, fill="#8B5CF6", width=3, capstyle=tk.ROUND, smooth=True)
-
+            padding_left = 50
+            padding_right = 30
+            padding_top = 30
+            padding_bottom = 40
+            
+            chart_width = w - padding_left - padding_right
+            chart_height = h - padding_top - padding_bottom
+            
+            # Clear canvas
+            self.canvas.delete("all")
+            
+            # Y-axis labels and grid lines
+            y_max = 130
+            y_steps = [0, 35, 70, 105, 130]
+            
+            for y_val in y_steps:
+                y_pos = h - padding_bottom - (y_val / y_max) * chart_height
+                
+                # Grid line
+                self.canvas.create_line(
+                    padding_left, y_pos,
+                    w - padding_right, y_pos,
+                    fill="#F1F5F9",
+                    width=1,
+                    dash=(3, 3)
+                )
+                
+                # Y label
+                self.canvas.create_text(
+                    padding_left - 10,
+                    y_pos,
+                    text=str(y_val),
+                    fill="#94A3B8",
+                    font=("Inter", 9),
+                    anchor="e"
+                )
+            
+            # Data points (matching the image)
+            days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            data_points = [120, 60, 55, 70, 75, 68]
+            
+            x_step = chart_width / (len(days) - 1)
+            
+            # Calculate canvas coordinates
+            coords = []
+            for i, val in enumerate(data_points):
+                x = padding_left + i * x_step
+                y = h - padding_bottom - (val / y_max) * chart_height
+                coords.append((x, y))
+                
+                # X label
+                self.canvas.create_text(
+                    x,
+                    h - padding_bottom + 15,
+                    text=days[i],
+                    fill="#94A3B8",
+                    font=("Inter", 10)
+                )
+            
+            # Draw line chart
+            if len(coords) > 1:
+                # Create smooth line segments
+                for i in range(len(coords) - 1):
+                    x1, y1 = coords[i]
+                    x2, y2 = coords[i + 1]
+                    
+                    self.canvas.create_line(
+                        x1, y1, x2, y2,
+                        fill="#8B5CF6",  # Purple
+                        width=3,
+                        capstyle=tk.ROUND,
+                        smooth=True
+                    )
+            
+            # Draw points
+            for x, y in coords:
+                self.canvas.create_oval(
+                    x - 4, y - 4, x + 4, y + 4,
+                    fill="#8B5CF6",
+                    outline="#8B5CF6",
+                    width=2
+                )
+        except Exception as e:
+            print(f"Error drawing chart: {e}")
+    
     def _create_roadmap_panel(self, parent):
-        panel = ctk.CTkFrame(parent, fg_color="#0F172A", corner_radius=15) # Dark Blue Panel
-        panel.grid(row=0, column=1, sticky="nsew", pady=0)
-        panel.pack_propagate(False)
+        """Create Class Roadmap panel (right side)"""
+        panel = ctk.CTkFrame(parent, fg_color="#0F172A", corner_radius=15)
+        panel.grid(row=0, column=1, sticky="nsew")
         
         # Header
         ctk.CTkLabel(
             panel,
             text="CLASS ROADMAP",
-            text_color="#22C55E", # Green
+            text_color="#22C55E",  # Green
             font=("Inter", 12, "bold"),
             anchor="w"
-        ).pack(fill="x", padx=20, pady=(25, 10))
+        ).pack(fill="x", padx=20, pady=(25, 15))
         
-        # Today Section
+        # TODAY Section
         ctk.CTkLabel(
             panel,
             text="TODAY",
             text_color="white",
             font=("Inter", 11, "bold"),
             anchor="w"
-        ).pack(fill="x", padx=20, pady=(10, 5))
+        ).pack(fill="x", padx=20, pady=(10, 8))
         
-        self._add_class_item(panel, "Probability and Statistics", "8:00 AM - 56/60", "#EC4899") # Pink accent
-        self._add_class_item(panel, "Computer Architecture", "1:00 PM - 54/60", "#FACC15") # Yellow accent
+        self._add_class_item(
+            panel,
+            "Probability and Statistics",
+            "8:00 AM - 50/60",
+            "#EC4899"  # Pink
+        )
         
-        # Tomorrow Section
+        self._add_class_item(
+            panel,
+            "Computer Architecture",
+            "1:00 PM - 54/60",
+            "#FACC15"  # Yellow
+        )
+        
+        # TOMORROW Section
         ctk.CTkLabel(
             panel,
             text="TOMORROW",
             text_color="white",
             font=("Inter", 11, "bold"),
             anchor="w"
-        ).pack(fill="x", padx=20, pady=(20, 5))
+        ).pack(fill="x", padx=20, pady=(20, 8))
         
-        self._add_class_item(panel, "Data Structures and Algorithms", "10:00 AM - 0/50", "#EF4444") # Red
-        self._add_class_item(panel, "Databases", "3:30 PM - 56/60", "#22C55E") # Green
-
+        self._add_class_item(
+            panel,
+            "Data Structures and Algorithms",
+            "10:00 AM - 0/50",
+            "#EF4444"  # Red
+        )
+        
+        self._add_class_item(
+            panel,
+            "Databases",
+            "3:30 PM - 56/60",
+            "#22C55E"  # Green
+        )
+        
         # Button at bottom
         ctk.CTkButton(
             panel,
@@ -264,20 +378,23 @@ class TeacherDashboardPage(ctk.CTkFrame):
             text_color="white",
             height=40,
             font=("Inter", 10, "bold"),
-            corner_radius=20
-        ).pack(side="bottom", padx=20, pady=30, fill="x")
-
+            corner_radius=20,
+            command=lambda: print("View all schedules clicked")
+        ).pack(side="bottom", padx=20, pady=25, fill="x")
+    
     def _add_class_item(self, parent, name, time_info, accent_color):
+        """Add a class item to roadmap"""
         item = ctk.CTkFrame(parent, fg_color="#1E293B", corner_radius=10)
-        item.pack(fill="x", padx=20, pady=5)
+        item.pack(fill="x", padx=20, pady=4)
         
-        # Accent Bar
+        # Accent bar (left border)
         bar = ctk.CTkFrame(item, fg_color=accent_color, width=4, corner_radius=2)
-        bar.pack(side="left", fill="y", padx=(0, 10))
+        bar.pack(side="left", fill="y", padx=(0, 0))
+        bar.pack_propagate(False)
         
         # Content
         content = ctk.CTkFrame(item, fg_color="transparent")
-        content.pack(side="left", padx=5, pady=10)
+        content.pack(side="left", fill="both", expand=True, padx=12, pady=12)
         
         ctk.CTkLabel(
             content,
@@ -293,4 +410,4 @@ class TeacherDashboardPage(ctk.CTkFrame):
             text_color="#94A3B8",
             font=("Inter", 10),
             anchor="w"
-        ).pack(anchor="w")
+        ).pack(anchor="w", pady=(2, 0))

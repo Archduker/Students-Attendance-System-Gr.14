@@ -211,7 +211,7 @@ class LoginPage(ctk.CTkFrame):
 
         self.email_entry = ctk.CTkEntry(
             self.form_container,
-            placeholder_text="", # No popup
+            placeholder_text="name@ut.edu.vn",  # Set placeholder from start
             font=("Inter", 14),
             height=48,
             fg_color="#F3F4F6", # Gray-100
@@ -220,8 +220,6 @@ class LoginPage(ctk.CTkFrame):
             corner_radius=10
         )
         self.email_entry.pack(fill="x", pady=(0, 20))
-        # Adding simple placeholder manually
-        self.email_entry.configure(placeholder_text="name@ut.edu.vn")
 
         # Password
         pwd_label_row = ctk.CTkFrame(self.form_container, fg_color="transparent")
@@ -274,14 +272,13 @@ class LoginPage(ctk.CTkFrame):
         )
         self.remember_cb.pack(anchor="w", pady=(0, 25))
         
-        # Load saved session
+        # Load saved "Remember me" preference only, not email
+        # (Email should not be pre-filled, only show placeholder)
         try:
             from config.session_config import load_session
             saved_session = load_session()
-            if saved_session and saved_session.get("last_email"):
-                self.email_entry.insert(0, saved_session["last_email"])
-                if saved_session.get("remember"):
-                    self.remember_var.set(True)
+            if saved_session and saved_session.get("remember"):
+                self.remember_var.set(True)
         except Exception:
             pass
 
@@ -365,7 +362,8 @@ class LoginPage(ctk.CTkFrame):
                 border_width=0
             )
         
-        # Update placeholder if needed
+        # Clear email entry first, then update placeholder
+        self.email_entry.delete(0, "end")
         if role_value == "ADMIN":
             self.email_entry.configure(placeholder_text="admin@ut.edu.vn")
         else:

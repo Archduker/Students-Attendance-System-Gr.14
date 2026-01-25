@@ -141,3 +141,75 @@ class QRService:
         buffer = io.BytesIO()
         qr_image.save(buffer, format="PNG")
         return buffer.getvalue()
+    
+    def decode_qr_from_image(self, image_path: str) -> tuple[bool, str, str]:
+        """
+        Decode QR code từ file ảnh.
+        
+        Args:
+            image_path: Đường dẫn đến file ảnh
+            
+        Returns:
+            Tuple (success, qr_data, error_message)
+            
+        Example:
+            >>> success, data, error = qr_service.decode_qr_from_image("qr.png")
+            >>> if success:
+            ...     print(f"QR Data: {data}")
+        """
+        try:
+            # Import opencv
+            try:
+                import cv2
+            except ImportError:
+                return False, "", "OpenCV chưa được cài đặt"
+            
+            # Read image
+            image = cv2.imread(image_path)
+            if image is None:
+                return False, "", "Không thể đọc file ảnh"
+            
+            # Decode QR code using OpenCV
+            qr_detector = cv2.QRCodeDetector()
+            qr_data, bbox, _ = qr_detector.detectAndDecode(image)
+            
+            if not qr_data:
+                return False, "", "Không tìm thấy mã QR trong ảnh"
+            
+            return True, qr_data, ""
+            
+        except Exception as e:
+            return False, "", f"Lỗi khi decode QR: {str(e)}"
+    
+    def decode_qr_from_camera_frame(self, frame) -> tuple[bool, str]:
+        """
+        Decode QR code từ OpenCV camera frame.
+        
+        Args:
+            frame: OpenCV frame (numpy array)
+            
+        Returns:
+            Tuple (found, qr_data)
+            
+        Example:
+            >>> import cv2
+            >>> cap = cv2.VideoCapture(0)
+            >>> ret, frame = cap.read()
+            >>> found, data = qr_service.decode_qr_from_camera_frame(frame)
+        """
+        try:
+            import cv2
+            
+            # Decode QR code using OpenCV
+            qr_detector = cv2.QRCodeDetector()
+            qr_data, bbox, _ = qr_detector.detectAndDecode(frame)
+            
+            if not qr_data:
+                return False, ""
+            
+            return True, qr_data
+            
+        except Exception as e:
+            print(f"Camera decode error: {e}")
+            return False, ""
+
