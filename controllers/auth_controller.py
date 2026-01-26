@@ -97,12 +97,13 @@ class AuthController:
         self.auth_service.logout()
         return {"success": True}
     
-    def handle_reset_password(self, email: str) -> Dict[str, Any]:
+    def handle_reset_password(self, email: str, role: str = None) -> Dict[str, Any]:
         """
         Handle password reset request.
         
         Args:
             email: User's email address
+            role: User's role (optional, for verification)
             
         Returns:
             Dict with keys: success, message
@@ -122,7 +123,7 @@ class AuthController:
                 "message": "Invalid email address"
             }
         
-        success, message = self.auth_service.reset_password(email)
+        success, message = self.auth_service.reset_password(email, role)
         return {
             "success": success,
             "message": message

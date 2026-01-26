@@ -98,24 +98,31 @@ class AuthService:
         """Check if user is authenticated."""
         return self._current_user is not None
     
-    def reset_password(self, email: str) -> Tuple[bool, str]:
+    def reset_password(self, email: str, role: str = None) -> Tuple[bool, str]:
         """
         Reset password and send via email.
         
         Args:
             email: User's email address
+            role: Optional role to verify against user
             
         Returns:
             Tuple (success, message)
             
         Example:
-            >>> success, msg = auth.reset_password("user@email.com")
+            >>> success, msg = auth.reset_password("user@email.com", "Student")
         """
         # Find user by email
         user = self.user_repo.find_by_email(email)
         
         if not user:
             return False, "Email does not exist in the system"
+            
+        # Verify role if provided
+        if role:
+            # Check if user role matches the requested role (case-insensitive)
+            if str(user.role.value).upper() != str(role).upper():
+                return False, f"Email exists but does not belong to role '{role}'"
         
         # Generate new password
         new_password = self.security.generate_code(8)

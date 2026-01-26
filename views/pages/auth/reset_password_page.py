@@ -9,6 +9,7 @@ class ResetPasswordPage(ctk.CTkFrame):
     Design matches LoginPage pixel-perfectly.
     """
     
+
     def __init__(
         self, 
         master, 
@@ -20,6 +21,8 @@ class ResetPasswordPage(ctk.CTkFrame):
         
         self.auth_controller = auth_controller
         self.on_back_to_login = on_back_to_login
+        self.selected_role = "Student"  # Default role
+        self.role_buttons = {} # Store button references
         
         # Grid layout: 55% Left, 45% Right
         self.grid_columnconfigure(0, weight=11)
@@ -258,7 +261,7 @@ class ResetPasswordPage(ctk.CTkFrame):
         )
         self.message_label.pack(fill="x", pady=(0, 10))
 
-        # 5. Institutional Access (Tabs) - Decorative but keeps UI consistent
+        # 5. Institutional Access (Tabs)
         ctk.CTkLabel(
             self.form_container,
             text="INSTITUTIONAL ACCESS",
@@ -283,24 +286,35 @@ class ResetPasswordPage(ctk.CTkFrame):
                 font=("Inter", 11, "bold"),
                 fg_color="transparent", 
                 text_color="#9CA3AF", 
-                hover_color="#F3F4F6", # Just allow hover, no selection logic needed for reset really
+                hover_color="#F3F4F6", 
                 width=80,
                 height=70,
                 corner_radius=12,
-                state="disabled" # Maybe disable them to indicate this is just reset page? Or keep enabled for consistency? Mockup shows "Student" selected. I'll make them visual only.
+                command=lambda r=label: self._select_role(r)
             )
-            # Match style of "Student selected" from login
-            if label == "Student":
-                btn.configure(fg_color="#EFF6FF", text_color="#3B82F6", state="normal")
-            
             btn.grid(row=0, column=i, sticky="ew", padx=5)
+            self.role_buttons[label] = btn
+
+        # Select default role
+        self._select_role("Student")
+
+    def _select_role(self, role):
+        """Handle role selection visual state"""
+        self.selected_role = role
+        
+        # Update UI for all buttons
+        for r, btn in self.role_buttons.items():
+            if r == role:
+                btn.configure(fg_color="#EFF6FF", text_color="#3B82F6")
+            else:
+                btn.configure(fg_color="transparent", text_color="#9CA3AF")
 
     def _validate_email(self, email: str) -> tuple[bool, str]:
         if not email:
-            return False, "Vui lòng nhập email"
+            return False, "Please enter your email"
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_pattern, email):
-            return False, "Email không hợp lệ"
+            return False, "Invalid email format"
         return True, ""
 
     def _handle_reset(self):
@@ -318,19 +332,23 @@ class ResetPasswordPage(ctk.CTkFrame):
     def _process_reset(self, email):
         if not self.auth_controller:
             self.message_label.configure(text="Auth Controller not connected", text_color="#EF4444")
-        else:
-            try:
-                result = self.auth_controller.handle_reset_password(email)
-                if result["success"]:
-                    msg = result.get("message", "Password reset link sent to email!")
-                    self.message_label.configure(text=msg, text_color="#10B981")
-                else:
-                    self.message_label.configure(text=result.get("message", "Failed to reset."), text_color="#EF4444")
-            except Exception as e:
-                self.message_label.configure(text=f"Error: {e}", text_color="#EF4444")
+            self.reset_btn.configure(text="Request Reset >", state="normal")
+            return
+
+        try:
+            # Pass selected role for verification
+            result = self.auth_controller.handle_reset_password(email, self.selected_role)
+            if result["success"]:
+                msg = result.get("message", "Password reset link sent to email!")
+                self.message_label.configure(text=msg, text_color="#10B981")
+            else:
+                self.message_label.configure(text=result.get("message", "Failed to reset."), text_color="#EF4444")
+        except Exception as e:
+            self.message_label.configure(text=f"Error: {e}", text_color="#EF4444")
         
         self.reset_btn.configure(text="Request Reset >", state="normal")
 
     def _handle_back(self):
         if self.on_back_to_login:
             self.on_back_to_login()
+
