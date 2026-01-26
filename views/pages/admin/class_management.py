@@ -120,7 +120,12 @@ class ClassManagementPage(ctk.CTkFrame):
         # Table header
         header = ctk.CTkFrame(list_frame, fg_color="gray25", height=40)
         header.grid(row=0, column=0, sticky="ew")
-        header.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        # Column weights: Class ID (medium), Class Name (larger), Subject (medium), Teacher (medium), Students (small)
+        header.grid_columnconfigure(0, weight=2, minsize=120)  # Class ID
+        header.grid_columnconfigure(1, weight=3, minsize=200)  # Class Name
+        header.grid_columnconfigure(2, weight=2, minsize=120)  # Subject
+        header.grid_columnconfigure(3, weight=2, minsize=120)  # Teacher
+        header.grid_columnconfigure(4, weight=2, minsize=120)  # Students
         header.grid_propagate(False)
         
         headers = ["Class ID", "Class Name", "Subject", "Teacher", "Students"]
@@ -138,7 +143,12 @@ class ClassManagementPage(ctk.CTkFrame):
             fg_color="transparent"
         )
         self.class_list_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
-        self.class_list_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        # Match header column weights
+        self.class_list_frame.grid_columnconfigure(0, weight=2, minsize=120)  # Class ID
+        self.class_list_frame.grid_columnconfigure(1, weight=3, minsize=200)  # Class Name
+        self.class_list_frame.grid_columnconfigure(2, weight=2, minsize=120)  # Subject
+        self.class_list_frame.grid_columnconfigure(3, weight=2, minsize=120)  # Teacher
+        self.class_list_frame.grid_columnconfigure(4, weight=2, minsize=120)  # Students
     
     def _create_action_buttons(self):
         """Tạo action buttons."""
@@ -229,19 +239,7 @@ class ClassManagementPage(ctk.CTkFrame):
         # Alternating row colors
         bg_color = "gray20" if idx % 2 == 0 else "transparent"
         
-        row_frame = ctk.CTkFrame(
-            self.class_list_frame,
-            fg_color=bg_color,
-            height=50
-        )
-        row_frame.grid(row=idx, column=0, sticky="ew", pady=1)
-        row_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
-        row_frame.grid_propagate(False)
-        
-        # Make row clickable
-        row_frame.bind("<Button-1>", lambda e, c=class_data: self._on_class_select(c))
-        
-        # Columns
+        # Column data
         student_count = len(class_data.get("student_codes", []))
         columns = [
             class_data.get("class_id", ""),
@@ -251,14 +249,26 @@ class ClassManagementPage(ctk.CTkFrame):
             f"{student_count} students"
         ]
         
-        for i, text in enumerate(columns):
+        # Grid each cell directly to parent
+        for col_idx, text in enumerate(columns):
+            cell = ctk.CTkFrame(
+                self.class_list_frame,
+                fg_color=bg_color,
+                height=50
+            )
+            cell.grid(row=idx, column=col_idx, sticky="ew", padx=2, pady=1)
+            cell.grid_propagate(False)
+            
             label = ctk.CTkLabel(
-                row_frame,
+                cell,
                 text=text,
                 font=ctk.CTkFont(size=12),
                 anchor="w"
             )
-            label.grid(row=0, column=i, padx=10, pady=10, sticky="w")
+            label.pack(fill="both", expand=True, padx=10, pady=10)
+            
+            # Make clickable
+            cell.bind("<Button-1>", lambda e, c=class_data: self._on_class_select(c))
             label.bind("<Button-1>", lambda e, c=class_data: self._on_class_select(c))
     
     def _on_search_change(self, event):
@@ -337,12 +347,19 @@ class ClassManagementPage(ctk.CTkFrame):
         if not self.selected_class:
             return
         
-        # TODO: Implement student management dialog
-        messagebox.showinfo(
-            "Manage Students",
-            f"Student management for class '{self.selected_class.get('class_name')}'\n\n"
-            "This feature will be implemented in the next phase."
+        # Import here to avoid circular import
+        from .student_enrollment_dialog import StudentEnrollmentDialog
+        
+        dialog = StudentEnrollmentDialog(
+            self,
+            self.admin_controller,
+            class_data=self.selected_class
         )
+        self.wait_window(dialog)
+        
+        # Refresh list if students were updated
+        if hasattr(dialog, 'success') and dialog.success:
+            self._load_classes()
     
     def _on_delete_class(self):
         """Handle delete class button."""

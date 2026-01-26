@@ -311,7 +311,29 @@ def run_gui(app_config: dict):
             
             # Import admin components
             from views.layouts.admin_layout import AdminLayout
-            from views.pages.admin import AdminDashboard, SystemReportsPage
+            from views.pages.admin import AdminDashboard, SystemReportsPage, UserManagementPage, ClassManagementPage
+            
+            # Initialize admin controller dependencies
+            from controllers.admin_controller import AdminController
+            from services.admin_service import AdminService
+            from data.repositories import ClassroomRepository, AttendanceSessionRepository
+            
+            # Get database and repos
+            db = app_config["db"]
+            user_repo = app_config["repositories"]["user"]
+            classroom_repo = ClassroomRepository(db)
+            session_repo = AttendanceSessionRepository(db)
+            
+            # Initialize service
+            admin_service = AdminService(
+                user_repo=user_repo,
+                classroom_repo=classroom_repo,
+                attendance_repo=session_repo,
+                security_service=app_config["services"]["security"]
+            )
+            
+            # Initialize controller
+            admin_controller = AdminController(admin_service)
             
             # Define navigation handler
             def navigate(page_key):
@@ -322,19 +344,22 @@ def run_gui(app_config: dict):
                 # Update layout state
                 layout.current_path = page_key
                 
-                # Instantiate Page
+                # Refresh sidebar buttons to update active state
+                layout._refresh_menu_buttons()
+                
+                # Instantiate and pack pages
                 if page_key == "dashboard":
-                    AdminDashboard(layout.content_area, admin_user=user, controller=None)
+                    page = AdminDashboard(layout.content_area, admin_user=user, controller=admin_controller)
+                    page.pack(fill="both", expand=True)
                 elif page_key == "reports":
-                    SystemReportsPage(layout.content_area, admin_user=user, controller=None)
+                    page = SystemReportsPage(layout.content_area, admin_user=user, controller=admin_controller)
+                    page.pack(fill="both", expand=True)
                 elif page_key == "user_management":
-                    # Placeholder - to be implemented
-                    import tkinter.messagebox as messagebox
-                    messagebox.showinfo("Coming Soon", "User Management page is under development")
-                elif page_key == "system_config":
-                    # Placeholder - to be implemented
-                    import tkinter.messagebox as messagebox
-                    messagebox.showinfo("Coming Soon", "System Config page is under development")
+                    page = UserManagementPage(layout.content_area, admin_controller=admin_controller)
+                    page.pack(fill="both", expand=True)
+                elif page_key == "class_management":
+                    page = ClassManagementPage(layout.content_area, admin_controller=admin_controller)
+                    page.pack(fill="both", expand=True)
                 elif page_key == "logout":
                     auth_controller.handle_logout()
                     show_login()

@@ -72,27 +72,43 @@ class AdminLayout(ctk.CTkFrame):
         ).pack(fill="x", padx=20, pady=(20, 10), anchor="w")
         
         # Menu Items
-        menu_items = [
+        self.menu_items = [
             ("📊 Dashboard", "dashboard"),
             ("📄 System Reports", "reports"),
             ("👥 User Management", "user_management"),
-            ("⚙️ System Config", "system_config"),
+            ("📚 Class Management", "class_management"),
         ]
         
-        for label, key in menu_items:
-            self._create_menu_button(label, key)
+        # Container for menu buttons
+        self.menu_buttons_container = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
+        self.menu_buttons_container.pack(fill="x", padx=0, pady=0)
         
-        # Spacer
-        ctk.CTkFrame(self.sidebar_frame, fg_color="transparent", height=20).pack()
+        self._refresh_menu_buttons()
+        
+        # Spacer to push bottom elements down
+        ctk.CTkFrame(self.sidebar_frame, fg_color="transparent").pack(fill="both", expand=True)
+        
+        # Sign Out button (pack first so it appears above status)
+        sign_out_btn = ctk.CTkButton(
+            self.sidebar_frame,
+            text="↩ Sign Out",
+            font=("Inter", 11),
+            fg_color="transparent",
+            text_color="#94A3B8",
+            hover_color="#334155",
+            anchor="w",
+            command=lambda: self.on_navigate("logout") if self.on_navigate else None
+        )
+        sign_out_btn.pack(side="bottom", fill="x", padx=20, pady=(10, 5))
         
         # Status Section (at bottom)
         status_frame = ctk.CTkFrame(
             self.sidebar_frame,
             fg_color="#334155",  # Lighter dark
             corner_radius=12,
-            height=60
+            height=70
         )
-        status_frame.pack(side="bottom", fill="x", padx=20, pady=20)
+        status_frame.pack(side="bottom", fill="x", padx=20, pady=(0, 20))
         status_frame.pack_propagate(False)
         
         # STATUS label
@@ -113,19 +129,7 @@ class AdminLayout(ctk.CTkFrame):
             font=("Inter", 11, "bold"),
             text_color="#22C55E"  # Green
         ).pack(side="left")
-        
-        # Sign Out
-        sign_out_btn = ctk.CTkButton(
-            self.sidebar_frame,
-            text="↩ Sign Out",
-            font=("Inter", 11),
-            fg_color="transparent",
-            text_color="#94A3B8",
-            hover_color="#334155",
-            anchor="w",
-            command=lambda: self.on_navigate("logout") if self.on_navigate else None
-        )
-        sign_out_btn.pack(side="bottom", fill="x", padx=20, pady=(0, 10))
+    
     
     def _create_menu_button(self, label: str, key: str):
         """Create a menu button."""
@@ -144,6 +148,30 @@ class AdminLayout(ctk.CTkFrame):
             command=lambda: self.on_navigate(key) if self.on_navigate else None
         )
         btn.pack(fill="x", padx=20, pady=3)
+    
+    def _refresh_menu_buttons(self):
+        """Refresh menu buttons to update active state."""
+        # Clear existing buttons
+        for widget in self.menu_buttons_container.winfo_children():
+            widget.destroy()
+        
+        # Recreate all buttons with current active state
+        for label, key in self.menu_items:
+            is_active = self.current_path == key
+            
+            btn = ctk.CTkButton(
+                self.menu_buttons_container,
+                text=label,
+                font=("Inter", 12, "bold" if is_active else "normal"),
+                fg_color="#0EA5E9" if is_active else "transparent",
+                text_color="white" if is_active else "#94A3B8",
+                hover_color="#0284C7" if is_active else "#334155",
+                anchor="w",
+                height=45,
+                corner_radius=10,
+                command=lambda k=key: self.on_navigate(k) if self.on_navigate else None
+            )
+            btn.pack(fill="x", padx=20, pady=3)
     
     def _create_main_area(self):
         """Create main content area with header."""

@@ -22,17 +22,24 @@ class AdminDashboard(ctk.CTkFrame):
         self.admin_user = admin_user
         self.controller = controller
         
-        # Grid layout: Main content (left, 70%) + Access Control (right, 30%)
-        self.grid_columnconfigure(0, weight=7)
-        self.grid_columnconfigure(1, weight=3)
-        self.grid_rowconfigure(0, weight=1)
+        # Make entire dashboard scrollable
+        self.pack(fill="both", expand=True)
         
-        self._setup_ui()
+        # Create scrollable container
+        scrollable_container = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        scrollable_container.pack(fill="both", expand=True)
+        
+        # Grid layout inside scrollable: Main content (left, 70%) + Access Control (right, 30%)
+        scrollable_container.grid_columnconfigure(0, weight=7)
+        scrollable_container.grid_columnconfigure(1, weight=3)
+        scrollable_container.grid_rowconfigure(0, weight=1)
+        
+        self._setup_ui(scrollable_container)
         # self.load_data()
     
-    def _setup_ui(self):
+    def _setup_ui(self, parent):
         # Left column: Main content
-        left_col = ctk.CTkFrame(self, fg_color="transparent")
+        left_col = ctk.CTkFrame(parent, fg_color="transparent")
         left_col.grid(row=0, column=0, sticky="nsew", padx=(0, 15))
         
         self._create_header(left_col)
@@ -41,7 +48,7 @@ class AdminDashboard(ctk.CTkFrame):
         self._create_audit_alerts(left_col)
         
         # Right column: Access Control
-        right_col = ctk.CTkFrame(self, fg_color="transparent")
+        right_col = ctk.CTkFrame(parent, fg_color="transparent")
         right_col.grid(row=0, column=1, sticky="nsew")
         
         self._create_access_control(right_col)
