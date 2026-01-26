@@ -54,6 +54,7 @@ env/
 database/*.db
 database/*.sqlite
 database/*.sqlite3
+data/sessions.json
 *.db 
 
 # =============================================================================

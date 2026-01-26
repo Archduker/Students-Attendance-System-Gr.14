@@ -9,6 +9,13 @@ Match UI from Image 3.
 import customtkinter as ctk
 from typing import Optional, List
 from datetime import datetime
+import threading
+import time
+import qrcode
+import secrets
+from PIL import Image, ImageTk
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
 class SessionDetailPage(ctk.CTkFrame):
     """
@@ -23,6 +30,14 @@ class SessionDetailPage(ctk.CTkFrame):
         # Grid layout
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
+        
+        # State
+        self.is_session_active = False
+        self.qr_image_ref = None
+        self.timer_thread = None
+        self.qr_thread = None
+        self.stop_event = threading.Event()
+        self.duration_minutes = 1
         
         self._setup_ui()
         # self.load_data()
@@ -56,10 +71,54 @@ class SessionDetailPage(ctk.CTkFrame):
         ).pack(side="left", padx=(0, 10))
         
         # MANUAL ENTRY (Dark/Active) - as per image 3
-        ctk.CTkButton(
-            btn_area, text="MANUAL ENTRY", fg_color="#0F172A", text_color="white",
-            font=("Inter", 11, "bold"), width=120, height=32, corner_radius=16, hover_color="#1E293B"
-        ).pack(side="left")
+        # Controls Frame
+        ctrl_frame = ctk.CTkFrame(btn_area, fg_color="transparent")
+        ctrl_frame.pack(side="left")
+
+        # Duration Selector
+        self.duration_var = ctk.StringVar(value="2 min")
+        self.duration_combo = ctk.CTkOptionMenu(
+            ctrl_frame,
+            values=[f"{i} min" for i in range(1, 6)],
+            variable=self.duration_var,
+            width=80,
+            height=32,
+            fg_color="#F1F5F9",
+            text_color="#0F172A",
+            button_color="#CBD5E1",
+            button_hover_color="#94A3B8"
+        )
+        self.duration_combo.pack(side="left", padx=(0, 10))
+
+        # START / STOP Button
+        self.action_btn = ctk.CTkButton(
+            ctrl_frame, 
+            text="START SESSION", 
+            fg_color="#0F172A", 
+            text_color="white",
+            font=("Inter", 11, "bold"), 
+            width=120, 
+            height=32, 
+            corner_radius=16, 
+            hover_color="#1E293B",
+            command=self.toggle_session
+        )
+        self.action_btn.pack(side="left")
+        
+        # Cut QR Button (Hidden by default)
+        self.cut_qr_btn = ctk.CTkButton(
+            ctrl_frame,
+            text="CUT QR",
+            fg_color="#E2E8F0",
+            text_color="#0F172A",
+            font=("Inter", 11, "bold"),
+            width=80,
+            height=32,
+            corner_radius=16,
+            hover_color="#CBD5E1",
+            command=self.cut_qr_image
+        )
+
 
     def _create_roster_card(self, parent):
         card = ctk.CTkFrame(parent, fg_color="white", corner_radius=15, border_width=1, border_color="#E2E8F0")
@@ -73,8 +132,18 @@ class SessionDetailPage(ctk.CTkFrame):
         info.pack(side="left")
         
         ctk.CTkLabel(info, text="Data Science Roster", font=("Inter", 18, "bold"), text_color="#0F172A").pack(anchor="w")
-        ctk.CTkLabel(info, text="Machine Learning - Cohort Average: 60 Scholars", font=("Inter", 12), text_color="#94A3B8").pack(anchor="w")
+        self.subtitle_label = ctk.CTkLabel(info, text="Machine Learning - Cohort Average: 60 Scholars", font=("Inter", 12), text_color="#94A3B8")
+        self.subtitle_label.pack(anchor="w")
         
+        # QR Code Display Area (Initially Hidden)
+        self.qr_frame = ctk.CTkFrame(card, fg_color="#F8FAFC", corner_radius=10)
+        
+        self.qr_label = ctk.CTkLabel(self.qr_frame, text="")
+        self.qr_label.pack(pady=20)
+        
+        self.timer_label = ctk.CTkLabel(self.qr_frame, text="00:00", font=("Inter", 24, "bold"), text_color="#EF4444")
+        self.timer_label.pack(pady=(0, 20))
+
         # Controls (Search + Button)
         controls = ctk.CTkFrame(header, fg_color="transparent")
         controls.pack(side="right")
@@ -164,3 +233,104 @@ class SessionDetailPage(ctk.CTkFrame):
              # No command for UI demo
         )
         btn.pack(side="left", padx=5)
+
+    def toggle_session(self):
+        if not self.is_session_active:
+            self.start_session()
+        else:
+            self.stop_session()
+
+    def start_session(self):
+        try:
+            minutes = int(self.duration_var.get().split()[0])
+            self.duration_seconds = minutes * 60
+        except:
+            self.duration_seconds = 60
+            
+        self.is_session_active = True
+        self.stop_event.clear()
+        
+        # Update UI
+        self.action_btn.configure(text="STOP SESSION", fg_color="#EF4444", hover_color="#DC2626")
+        self.cut_qr_btn.pack(side="left", padx=(10, 0))
+        self.duration_combo.configure(state="disabled")
+        
+        # Show QR Frame
+        self.list_frame.pack_forget()
+        self.qr_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        # Start Threads
+        self.qr_thread = threading.Thread(target=self._qr_loop, daemon=True)
+        self.timer_thread = threading.Thread(target=self._timer_loop, daemon=True)
+        
+        self.qr_thread.start()
+        self.timer_thread.start()
+
+    def stop_session(self):
+        self.is_session_active = False
+        self.stop_event.set()
+        
+        # Update UI
+        self.action_btn.configure(text="START SESSION", fg_color="#0F172A", hover_color="#1E293B")
+        self.cut_qr_btn.pack_forget()
+        self.duration_combo.configure(state="normal")
+        self.timer_label.configure(text="00:00")
+        
+        # Hide QR, Show List
+        self.qr_frame.pack_forget()
+        self.list_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+    def _qr_loop(self):
+        """Regenerate QR every 30 seconds"""
+        while not self.stop_event.is_set():
+            # Generate QR Data
+            timestamp = int(datetime.now().timestamp())
+            token = secrets.token_hex(8)
+            # Format: session_id|token|timestamp
+            data = f"{self.session_id or 'TEST'}|{token}|{timestamp}"
+            
+            # Create QR Image
+            qr = qrcode.QRCode(box_size=10, border=2)
+            qr.add_data(data)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Update UI on main thread
+            self.after(0, lambda i=img: self._update_qr_image(i))
+            
+            # Wait 30s or stop
+            for _ in range(30):
+                if self.stop_event.is_set(): break
+                time.sleep(1)
+
+    def _update_qr_image(self, pil_image):
+        self.current_qr_image = pil_image # Save ref for cut/save
+        ctk_img = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(300, 300))
+        self.qr_label.configure(image=ctk_img)
+
+    def _timer_loop(self):
+        remaining = self.duration_seconds
+        while remaining > 0 and not self.stop_event.is_set():
+            mins, secs = divmod(remaining, 60)
+            time_str = f"{mins:02d}:{secs:02d}"
+            self.after(0, lambda t=time_str: self.timer_label.configure(text=t))
+            
+            time.sleep(1)
+            remaining -= 1
+            
+        if remaining <= 0 and not self.stop_event.is_set():
+            self.after(0, self.stop_session)
+            self.after(0, lambda: tk.messagebox.showinfo("Session Ended", "Attendance session finished."))
+
+    def cut_qr_image(self):
+        """Save QR Code to file (Cut/Export)"""
+        if hasattr(self, 'current_qr_image') and self.current_qr_image:
+            filename = filedialog.asksaveasfilename(
+                defaultextension=".png",
+                filetypes=[("PNG files", "*.png")],
+                title="Save QR Code"
+            )
+            if filename:
+                self.current_qr_image.save(filename)
+                tk.messagebox.showinfo("Saved", f"QR Code saved to {filename}")
+
