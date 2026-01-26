@@ -133,7 +133,12 @@ class UserManagementPage(ctk.CTkFrame):
         # Table header
         header = ctk.CTkFrame(list_frame, fg_color="gray25", height=40)
         header.grid(row=0, column=0, sticky="ew")
-        header.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        # Column weights: ID (smaller), Username (medium), Full Name (larger), Role (small), Email (larger)
+        header.grid_columnconfigure(0, weight=1, minsize=60)   # ID
+        header.grid_columnconfigure(1, weight=2, minsize=120)  # Username  
+        header.grid_columnconfigure(2, weight=3, minsize=180)  # Full Name
+        header.grid_columnconfigure(3, weight=1, minsize=100)  # Role
+        header.grid_columnconfigure(4, weight=3, minsize=200)  # Email
         header.grid_propagate(False)
         
         headers = ["ID", "Username", "Full Name", "Role", "Email"]
@@ -151,7 +156,12 @@ class UserManagementPage(ctk.CTkFrame):
             fg_color="transparent"
         )
         self.user_list_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
-        self.user_list_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        # Match header column weights
+        self.user_list_frame.grid_columnconfigure(0, weight=1, minsize=60)   # ID
+        self.user_list_frame.grid_columnconfigure(1, weight=2, minsize=120)  # Username
+        self.user_list_frame.grid_columnconfigure(2, weight=3, minsize=180)  # Full Name
+        self.user_list_frame.grid_columnconfigure(3, weight=1, minsize=100)  # Role
+        self.user_list_frame.grid_columnconfigure(4, weight=3, minsize=200)  # Email
     
     def _create_action_buttons(self):
         """Tạo action buttons."""
@@ -232,35 +242,42 @@ class UserManagementPage(ctk.CTkFrame):
         # Alternating row colors
         bg_color = "gray20" if idx % 2 == 0 else "transparent"
         
-        row_frame = ctk.CTkFrame(
-            self.user_list_frame,
-            fg_color=bg_color,
-            height=50
-        )
-        row_frame.grid(row=idx, column=0, sticky="ew", pady=1)
-        row_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
-        row_frame.grid_propagate(False)
+        # Column data
+        # Auto-generate email if not present
+        email = user.get("email", "")
+        if not email:
+            # Generate email from username: username@ut.edu.vn
+            username = user.get("username", "")
+            email = f"{username}@ut.edu.vn" if username else "N/A"
         
-        # Make row clickable
-        row_frame.bind("<Button-1>", lambda e, u=user: self._on_user_select(u))
-        
-        # Columns
         columns = [
             str(user.get("user_id", "")),
             user.get("username", ""),
             user.get("full_name", ""),
             user.get("role", ""),
-            user.get("email", "") or "N/A"
+            email
         ]
         
-        for i, text in enumerate(columns):
+        # Grid each cell directly to parent
+        for col_idx, text in enumerate(columns):
+            cell = ctk.CTkFrame(
+                self.user_list_frame,
+                fg_color=bg_color,
+                height=50
+            )
+            cell.grid(row=idx, column=col_idx, sticky="ew", padx=2, pady=1)
+            cell.grid_propagate(False)
+            
             label = ctk.CTkLabel(
-                row_frame,
+                cell,
                 text=text,
                 font=ctk.CTkFont(size=12),
                 anchor="w"
             )
-            label.grid(row=0, column=i, padx=10, pady=10, sticky="w")
+            label.pack(fill="both", expand=True, padx=10, pady=10)
+            
+            # Make clickable
+            cell.bind("<Button-1>", lambda e, u=user: self._on_user_select(u))
             label.bind("<Button-1>", lambda e, u=user: self._on_user_select(u))
     
     def _on_search_change(self, event):
