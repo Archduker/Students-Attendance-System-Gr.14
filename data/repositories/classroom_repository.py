@@ -31,7 +31,7 @@ class ClassroomRepository(BaseRepository[Classroom]):
             class_id=row["class_id"],
             class_name=row["class_name"],
             subject_code=row["subject_code"],
-            teacher_code=row.get("teacher_code"),
+            teacher_code=row["teacher_code"],
         )
     
     def _entity_to_dict(self, entity: Classroom) -> Dict[str, Any]:

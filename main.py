@@ -163,6 +163,31 @@ def run_gui(app_config: dict):
             """Hiển thị giao diện sinh viên."""
             if current_page[0]:
                 current_page[0].destroy()
+            
+            # Initialize student controller dependencies
+            from controllers.student_controller import StudentController
+            from services.student_service import StudentService
+            from data.repositories import AttendanceRecordRepository, AttendanceSessionRepository, ClassroomRepository
+            
+            # Get database and repos
+            db = app_config["db"]
+            user_repo = app_config["repositories"]["user"]
+            
+            # Initialize repositories
+            record_repo = AttendanceRecordRepository(db)
+            session_repo = AttendanceSessionRepository(db)
+            class_repo = ClassroomRepository(db)
+            
+            # Initialize service
+            student_service = StudentService(
+                user_repo=user_repo,
+                attendance_record_repo=record_repo,
+                attendance_session_repo=session_repo,
+                class_repo=class_repo
+            )
+            
+            # Initialize controller
+            student_controller = StudentController(student_service)
                 
             # Define navigation handler
             def navigate(page_key):
@@ -175,11 +200,28 @@ def run_gui(app_config: dict):
                 
                 # Instantiate Page
                 if page_key == "dashboard":
-                    StudentDashboard(layout.content_area, on_navigate=navigate, user=user)
+                    StudentDashboard(
+                        layout.content_area, 
+                        on_navigate=navigate, 
+                        user=user,
+                        student_service=student_service,
+                        student_controller=student_controller
+                    )
                 elif page_key == "submit_attendance":
-                    SubmitAttendancePage(layout.content_area, on_navigate=navigate)
+                    SubmitAttendancePage(
+                        layout.content_area, 
+                        on_navigate=navigate,
+                        user=user,
+                        student_service=student_service,
+                        student_controller=student_controller
+                    )
                 elif page_key == "history":
-                    AttendanceHistoryPage(layout.content_area, on_navigate=navigate)
+                    AttendanceHistoryPage(
+                        layout.content_area, 
+                        on_navigate=navigate,
+                        user=user,
+                        student_service=student_service
+                    )
                 elif page_key == "profile":
                     ProfilePage(layout.content_area, on_navigate=navigate, user=user)
                 elif page_key == "logout":

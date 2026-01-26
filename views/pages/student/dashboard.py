@@ -1,61 +1,128 @@
 import customtkinter as ctk
-from views.layouts.student_layout import StudentLayout
+from datetime import datetime
+import threading
+
 from views.components.modal import Modal
 
+# --- Constants & Theme ---
+COLORS = {
+    "primary": "#3B82F6",      # Blue
+    "success": "#22C55E",      # Green
+    "warning": "#F59E0B",      # Orange
+    "error": "#EF4444",        # Red
+    "purple": "#7C3AED",       # Purple
+    
+    "bg_light": "#F3F4F6",     # Light gray bg
+    "bg_dark": "#0F172A",      # Dark bg
+    "bg_card": "#FFFFFF",      # White card
+    
+    "text_primary": "#1E293B", # Dark text
+    "text_secondary": "#64748B", # Gray text
+    "text_muted": "#94A3B8",   # Light gray text
+    "border": "#E2E8F0"        # Light border
+}
+
+FONTS = {
+    "header": ("Inter", 28, "bold"),
+    "subheader": ("Inter", 14),
+    "tag": ("Inter", 11, "bold"),
+    "card_label": ("Inter", 11, "bold"),
+    "card_value": ("Inter", 28, "bold"),
+    "section_title": ("Inter", 12, "bold"),
+    "body_bold": ("Inter", 12, "bold"),
+    "body": ("Inter", 12),
+    "body_sm": ("Inter", 11),
+    "body_xs": ("Inter", 10)
+}
+
 class StudentDashboard(ctk.CTkFrame):
-    def __init__(self, master, on_navigate=None, user=None, user_name="Student"):
-        super().__init__(master, fg_color="#F3F4F6")
+    def __init__(self, master, on_navigate=None, user=None, user_name="Student", student_service=None, student_controller=None):
+        super().__init__(master, fg_color=COLORS["bg_light"])
         self.pack(expand=True, fill="both")
         
-        # Store user object and extract display name
+        self.on_navigate = on_navigate
         self.user = user
+        self.student_service = student_service
+        self.student_controller = student_controller
+        
+        # Determine display name and student code
+        self.display_name = user_name
+        self.student_code = "UNKNOWN"
+        
         if user:
-            self.display_name = user.full_name if hasattr(user, 'full_name') else user_name
-        else:
-            self.display_name = user_name
-            
-        # Show Welcome Popup
-        self.after(500, self._show_welcome_popup)
+            self.display_name = user.full_name if hasattr(user, 'full_name') else user.username
+            if hasattr(user, 'student_code'):
+                self.student_code = user.student_code
+            elif hasattr(user, 'username'): 
+                self.student_code = user.username
+        
+        # Setup UI Containers
+        self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.content_frame.pack(fill="both", expand=True, padx=30, pady=30)
+        
+        # Init UI
+        self._init_ui()
+        
+        # Load Data
+        self.refresh_dashboard()
+        
+        # Start Auto Refresh (1 minute)
+        self.after(60000, self._auto_refresh_loop)
 
-        # Welcome Section
+    def _auto_refresh_loop(self):
+        if self.winfo_exists():
+            self.refresh_dashboard()
+            self.after(60000, self._auto_refresh_loop)
+
+    def _init_ui(self):
+        # 1. Welcome Section
         self._create_welcome_section()
         
-        # Stats Cards
-        self._create_stats_cards()
+        # 2. Stats Section
+        self.stats_container = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        self.stats_container.pack(fill="x", pady=(25, 0))
         
-        # Bottom Section (Schedule + Log)
-        self.bottom_grid = ctk.CTkFrame(self, fg_color="transparent")
-        self.bottom_grid.pack(fill="both", expand=True, pady=20)
-        self.bottom_grid.grid_columnconfigure(0, weight=3) # Schedule
-        self.bottom_grid.grid_columnconfigure(1, weight=2) # Log
+        # 3. Bottom Grid (Schedule & Log)
+        self.bottom_grid = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        self.bottom_grid.pack(fill="both", expand=True, pady=25)
+        self.bottom_grid.grid_columnconfigure(0, weight=3)
+        self.bottom_grid.grid_columnconfigure(1, weight=2)
         self.bottom_grid.grid_rowconfigure(0, weight=1)
-
-        self._create_schedule(self.bottom_grid)
-        self._create_verification_log(self.bottom_grid)
-
-    def _show_welcome_popup(self):
-        Modal(
-            self.winfo_toplevel(),
-            title="Welcome Back!",
-            message=f"Good Morning, {self.display_name}!\nYour Probability and Statistics lab is starting in 15 minutes.",
-            type="success",
-            button_text="Go to Dashboard"
-        )
+        
+        # Schedule Frame (Left)
+        self.schedule_frame = ctk.CTkFrame(self.bottom_grid, fg_color=COLORS["bg_card"], corner_radius=16, border_width=1, border_color=COLORS["border"])
+        self.schedule_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 20))
+        self.schedule_frame.pack_propagate(False)
+        
+        # Log Frame (Right, Dark)
+        self.log_frame = ctk.CTkFrame(self.bottom_grid, fg_color=COLORS["bg_dark"], corner_radius=16)
+        self.log_frame.grid(row=0, column=1, sticky="nsew")
+        self.log_frame.pack_propagate(False)
 
     def _create_welcome_section(self):
-        frm = ctk.CTkFrame(self, fg_color="transparent")
-        frm.pack(fill="x", pady=(0, 20))
+        frm = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        frm.pack(fill="x")
         
-        # Breadcrumb / Tag
-        # Use student code or Generic major if not available
-        subtext = self.user.student_code if hasattr(self.user, 'student_code') else "DS Major • Year 2"
-        ctk.CTkLabel(frm, text=f"●  {subtext}", text_color="#8B5CF6", fg_color="#F3E8FF", corner_radius=6, font=("Inter", 10, "bold"), padx=10, pady=2).pack(anchor="w", pady=(0, 10))
+        # Student Tag
+        tag = ctk.CTkLabel(
+            frm, 
+            text=f"●  {self.student_code}", 
+            text_color=COLORS["purple"], 
+            fg_color="#F3E8FF", 
+            corner_radius=6, 
+            font=FONTS["tag"], 
+            padx=10, pady=4
+        )
+        tag.pack(anchor="w", pady=(0, 8))
         
-        # Header
-        ctk.CTkLabel(frm, text=f"Hi, {self.display_name}!", font=("Inter", 24, "bold"), text_color="#1E293B").pack(anchor="w")
-        ctk.CTkLabel(frm, text="Your Probability and Statistics lab is live.", font=("Inter", 13), text_color="#64748B").pack(anchor="w")
+        # Greeting
+        ctk.CTkLabel(frm, text=f"Hi, {self.display_name}!", font=FONTS["header"], text_color=COLORS["text_primary"]).pack(anchor="w")
         
-        # Action Button (Floating right)
+        # Date/Subtext
+        today_str = datetime.now().strftime("%A, %d %B %Y")
+        ctk.CTkLabel(frm, text=f"Today is {today_str}. Have a great learning session!", font=FONTS["subheader"], text_color=COLORS["text_secondary"]).pack(anchor="w")
+        
+        # Action Button
         action_btn = ctk.CTkButton(
             frm,
             text="MARK SESSION PRESENT  ➔",
@@ -63,115 +130,219 @@ class StudentDashboard(ctk.CTkFrame):
             fg_color="black",
             text_color="white",
             corner_radius=20,
-            height=40
+            height=40,
+            hover_color="#333333",
+            command=self._on_mark_present_click
         )
         action_btn.place(relx=1.0, rely=0.5, anchor="e")
 
-    def _create_stats_cards(self):
-        cards_frm = ctk.CTkFrame(self, fg_color="transparent")
-        cards_frm.pack(fill="x", pady=0)
-        
-        stats = [
-            ("ATTENDANCE", "95%", "✅", "#22C55E"), # Green
-            ("GPU LAB TIME", "18h", "🕒", "#7C3AED"), # Purple
-            ("ABSENCES", "01", "🎒", "#EF4444"), # Red
-            ("SCHOLAR RANK", "#11", "🏆", "#F59E0B")  # Orange
-        ]
-        
-        for i, (label, val, icon, color) in enumerate(stats):
-            card = ctk.CTkFrame(cards_frm, fg_color="white", height=100, corner_radius=15)
-            card.pack(side="left", fill="x", expand=True, padx=(0 if i==0 else 15, 0))
-            card.pack_propagate(False)
+    def refresh_dashboard(self):
+        """Fetch data and update UI."""
+        if not self.student_service:
+            # Show empty/demo state if service not injected (fallback)
+            self._update_stats_demo()
+            return
             
-            # Header with icon
-            head = ctk.CTkFrame(card, fg_color="transparent")
-            head.pack(fill="x", padx=20, pady=15)
-            ctk.CTkLabel(head, text=icon + " " + label, text_color="#94A3B8", font=("Inter", 10, "bold")).pack(side="left")
+        try:
+            # Fetch Data
+            # 1. Stats & Recent Log
+            stats = self.student_service.get_dashboard_stats(self.student_code)
             
-            # Value
-            ctk.CTkLabel(card, text=val, text_color="#1E293B", font=("Inter", 24, "bold")).pack(anchor="w", padx=20)
+            # 2. Today's Sessions
+            todays_sessions = self.student_service.get_todays_sessions(self.student_code)
+            
+            # Update UI
+            self._update_stats(stats)
+            self._update_schedule(todays_sessions)
+            self._update_log(stats.get("recent_attendance", []))
+            
+        except Exception as e:
+            print(f"Error refreshing dashboard: {e}")
+            # Could show error toast here
 
-    def _create_schedule(self, parent):
-        container = ctk.CTkFrame(parent, fg_color="white", corner_radius=15)
-        container.grid(row=0, column=0, sticky="nsew", padx=(0, 15))
-        container.pack_propagate(False)
-        
-        # Header
-        head = ctk.CTkFrame(container, fg_color="transparent")
-        head.pack(fill="x", padx=25, pady=20)
-        ctk.CTkLabel(head, text="ACADEMIC SCHEDULE TODAY", font=("Inter", 11, "bold"), text_color="#64748B").pack(side="left")
-        ctk.CTkLabel(head, text="SEMESTER PLAN", font=("Inter", 11, "bold"), text_color="#6366F1").pack(side="right")
-        
-        # Items
+    def _update_stats(self, stats):
+        # Clear old stats
+        for widget in self.stats_container.winfo_children():
+            widget.destroy()
+            
+        # Data preparation
         items = [
-            ("Python Programming Language", "08:45 AM - 09:20 AM", "B307", "IN SESSION", "#F3E8FF", "#7C3AED"),
-            ("Mathematical Methods for ML", "12:10 PM - 14:50 AM", "F305", "UPCOMING", "#F3F4F6", "#94A3B8"),
-            ("Software Technology", "15:00 PM - 17:15 AM", "C109", "UPCOMING", "#F3F4F6", "#94A3B8"),
+            ("ATTENDANCE", f"{stats.get('attendance_rate', 0)}%", "✅", COLORS["success"]),
+            ("TOTAL SESSIONS", str(stats.get('total_sessions', 0)), "📚", COLORS["purple"]),
+            ("PRESENT", str(stats.get('present_count', 0)), "✅", COLORS["success"]),
+            ("ABSENT", str(stats.get('absent_count', 0)), "❌", COLORS["error"])
         ]
         
-        for title, time, room, status, badge_bg, badge_fg in items:
-            row = ctk.CTkFrame(container, fg_color="transparent", height=70)
-            row.pack(fill="x", padx=20, pady=5)
+        for i, (label, val, icon, color) in enumerate(items):
+            self._create_stat_card(self.stats_container, label, val, icon, color, i==0)
             
-            # Icon Box
-            icon_box = ctk.CTkFrame(row, width=45, height=45, fg_color="white", border_width=1, border_color="#E2E8F0", corner_radius=10)
-            icon_box.pack(side="left")
-            ctk.CTkLabel(icon_box, text="DS", font=("Inter", 8), text_color="gray").place(relx=0.5, rely=0.3, anchor="center")
-            ctk.CTkLabel(icon_box, text=title[0:2].upper(), font=("Inter", 10, "bold"), text_color="black").place(relx=0.5, rely=0.7, anchor="center")
-            
-            # Info
-            info = ctk.CTkFrame(row, fg_color="transparent")
-            info.pack(side="left", padx=15)
-            ctk.CTkLabel(info, text=title, font=("Inter", 12, "bold"), text_color="#1E293B").pack(anchor="w")
-            ctk.CTkLabel(info, text=f"🕒 {time}   📍 {room}", font=("Inter", 10), text_color="#64748B").pack(anchor="w")
-
-            # Status Badge
-            ctk.CTkLabel(row, text=status, fg_color=badge_bg, text_color=badge_fg, font=("Inter", 9, "bold"), corner_radius=10, width=90, height=25).pack(side="right")
-
-    def _create_verification_log(self, parent):
-        container = ctk.CTkFrame(parent, fg_color="#0F172A", corner_radius=15) # Dark bg
-        container.grid(row=0, column=1, sticky="nsew")
-        container.pack_propagate(False)
+    def _create_stat_card(self, parent, label, value, icon, color, is_first):
+        card = ctk.CTkFrame(parent, fg_color=COLORS["bg_card"], height=120, corner_radius=16, border_width=1, border_color=COLORS["border"])
+        card.pack(side="left", fill="x", expand=True, padx=(0 if is_first else 15, 0))
+        card.pack_propagate(False)
         
+        head = ctk.CTkFrame(card, fg_color="transparent")
+        head.pack(fill="x", padx=25, pady=(25, 10))
+        
+        # Icon + Label
+        ctk.CTkLabel(head, text=icon, font=("Inter", 14)).pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(head, text=label, text_color=COLORS["text_muted"], font=FONTS["card_label"]).pack(side="left")
+        
+        # Value
+        ctk.CTkLabel(card, text=value, text_color=COLORS["text_primary"], font=FONTS["card_value"]).pack(anchor="w", padx=25)
+        
+        # Bottom Line
+        # ctk.CTkFrame(card, height=4, fg_color=color, width=1000).pack(side="bottom", fill="x") # Optional accent
+
+    def _update_schedule(self, sessions):
+        # Clear
+        for widget in self.schedule_frame.winfo_children():
+            widget.destroy()
+            
         # Header
-        ctk.CTkLabel(container, text="VERIFICATION LOG", font=("Inter", 12, "bold"), text_color="#22C55E").pack(anchor="w", padx=25, pady=25)
+        head = ctk.CTkFrame(self.schedule_frame, fg_color="transparent")
+        head.pack(fill="x", padx=25, pady=25)
+        ctk.CTkLabel(head, text="ACADEMIC SCHEDULE TODAY", font=FONTS["section_title"], text_color=COLORS["text_secondary"]).pack(side="left")
+        ctk.CTkLabel(head, text="SEMESTER PLAN", font=FONTS["card_label"], text_color=COLORS["primary"]).pack(side="right")
         
-        # Log items (Simulated timeline)
-        logs = [
-            ("Probability and Statistics", "Present", "YESTERDAY, 15:46 PM", "#22C55E"), # Green bar
-            ("Computer Architecture", "Late", "YESTERDAY, 10:20 AM", "#F59E0B"), # Orange bar
-            ("Data Structures", "Absent", "1 JAN, 12:30 PM", "#EF4444"), # Red
-            ("Databases", "Present", "1 JAN, 9:55 AM", "#22C55E"),
-        ]
+        # Content
+        if not sessions:
+            self._show_empty_state(self.schedule_frame, "No classes scheduled for today")
+            return
+            
+        scroll = ctk.CTkScrollableFrame(self.schedule_frame, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=10, pady=(0, 15))
         
-        for title, status, time, color in logs:
-            row = ctk.CTkFrame(container, fg_color="transparent")
-            row.pack(fill="x", padx=25, pady=8)
-            
-            # Bar indicator
-            ctk.CTkFrame(row, width=3, height=35, fg_color=color).pack(side="left")
-            
-            content = ctk.CTkFrame(row, fg_color="transparent")
-            content.pack(side="left", padx=10, fill="x", expand=True)
-            
-            # Top line
-            top = ctk.CTkFrame(content, fg_color="transparent")
-            top.pack(fill="x")
-            ctk.CTkLabel(top, text=title, font=("Inter", 11, "bold"), text_color="white").pack(side="left")
-            ctk.CTkLabel(top, text=time, font=("Inter", 9), text_color="#64748B").pack(side="right")
-            
-            # Bottom line
-            ctk.CTkLabel(content, text=f"Status: {status}", font=("Inter", 10), text_color="#94A3B8").pack(anchor="w")
+        for session in sessions:
+            self._create_schedule_item(scroll, session)
 
-        # Download button
+    def _create_schedule_item(self, parent, session):
+        row = ctk.CTkFrame(parent, fg_color="transparent", height=80)
+        row.pack(fill="x", padx=10, pady=5)
+        
+        # Icon Box (Initials)
+        initials = session['class_name'][:2].upper()
+        icon_box = ctk.CTkFrame(row, width=50, height=50, fg_color="white", border_width=1, border_color=COLORS["border"], corner_radius=12)
+        icon_box.pack(side="left", padx=(0, 15))
+        
+        ctk.CTkLabel(icon_box, text=session['subject_code'][:3], font=FONTS["body_xs"], text_color="gray").place(relx=0.5, rely=0.3, anchor="center")
+        ctk.CTkLabel(icon_box, text=initials, font=FONTS["body_bold"], text_color="black").place(relx=0.5, rely=0.7, anchor="center")
+        
+        # Info
+        info = ctk.CTkFrame(row, fg_color="transparent")
+        info.pack(side="left", fill="x", expand=True)
+        
+        ctk.CTkLabel(info, text=session['class_name'], font=FONTS["body_bold"], text_color=COLORS["text_primary"]).pack(anchor="w")
+        
+        time_text = f"🕒 {session['start_time']} - {session['end_time']}   📍 {session['room']}"
+        ctk.CTkLabel(info, text=time_text, font=FONTS["body_sm"], text_color=COLORS["text_secondary"]).pack(anchor="w", pady=(4, 0))
+        
+        # Status Badge
+        status = session['status']
+        bg_color = "#F3E8FF" if status == "OPEN" else "#F3F4F6"
+        fg_color = COLORS["purple"] if status == "OPEN" else COLORS["text_secondary"]
+        status_text = "IN SESSION" if status == "OPEN" else status
+        
+        ctk.CTkLabel(
+            row, 
+            text=status_text, 
+            fg_color=bg_color, 
+            text_color=fg_color, 
+            font=FONTS["tag"], 
+            corner_radius=12, 
+            width=100, 
+            height=30
+        ).pack(side="right")
+
+    def _update_log(self, logs):
+        # Clear
+        for widget in self.log_frame.winfo_children():
+            widget.destroy()
+            
+        # Header
+        ctk.CTkLabel(self.log_frame, text="VERIFICATION LOG", font=FONTS["section_title"], text_color=COLORS["success"]).pack(anchor="w", padx=25, pady=25)
+        
+        if not logs:
+            self._show_empty_state(self.log_frame, "No attendance records yet", dark=True)
+            pass
+        else:
+            scroll = ctk.CTkScrollableFrame(self.log_frame, fg_color="transparent")
+            scroll.pack(fill="both", expand=True, padx=5, pady=(0, 20))
+            
+            for log in logs:
+                self._create_log_item(scroll, log)
+        
+        # Download Button
         ctk.CTkButton(
-            container, 
+            self.log_frame, 
             text="DOWNLOAD FULL TRANSCRIPT",
-            font=("Inter", 10, "bold"),
+            font=FONTS["tag"],
             fg_color="transparent",
             border_width=1,
             border_color="#334155",
             hover_color="#1E293B",
-            height=36,
-            corner_radius=18
+            height=40,
+            corner_radius=20
         ).pack(side="bottom", pady=30)
+
+    def _create_log_item(self, parent, log):
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x", padx=15, pady=8)
+        
+        # Status color
+        status_map = {
+            "PRESENT": COLORS["success"],
+            "ABSENT": COLORS["error"],
+            "LATE": COLORS["warning"]
+        }
+        color = status_map.get(log['status'], COLORS["text_muted"])
+        
+        # Bar indicator
+        ctk.CTkFrame(row, width=3, height=40, fg_color=color).pack(side="left")
+        
+        content = ctk.CTkFrame(row, fg_color="transparent")
+        content.pack(side="left", padx=15, fill="x", expand=True)
+        
+        # Top line
+        top = ctk.CTkFrame(content, fg_color="transparent")
+        top.pack(fill="x")
+        ctk.CTkLabel(top, text=log.get('class_name', 'Unknown Class'), font=FONTS["body_bold"], text_color="white").pack(side="left")
+        
+        # Format date for right side
+        # Assuming log['date'] is YYYY-MM-DD
+        try:
+            date_obj = datetime.strptime(log['date'], "%Y-%m-%d")
+            date_str = date_obj.strftime("%d %b")
+        except:
+            date_str = log['date']
+            
+        ctk.CTkLabel(top, text=f"{date_str}, {log['time']}", font=FONTS["body_xs"], text_color=COLORS["text_secondary"]).pack(side="right")
+        
+        # Bottom line
+        ctk.CTkLabel(content, text=f"Status: {log['status'].title()}", font=FONTS["body_sm"], text_color=COLORS["text_muted"]).pack(anchor="w", pady=(2, 0))
+
+    def _show_empty_state(self, parent, message, dark=False):
+        frame = ctk.CTkFrame(parent, fg_color="transparent")
+        frame.pack(expand=True, fill="both")
+        
+        icon = "📭"
+        color = COLORS["text_muted"] if not dark else "#475569"
+        
+        ctk.CTkLabel(frame, text=icon, font=("Inter", 40)).pack(pady=(20, 10))
+        ctk.CTkLabel(frame, text=message, font=FONTS["body"], text_color=color).pack()
+
+    def _update_stats_demo(self):
+        # Fallback for preview/testing without service
+        stats = {
+            "attendance_rate": 95,
+            "total_sessions": 18,
+            "present_count": 17,
+            "absent_count": 1
+        }
+        self._update_stats(stats)
+        self._show_empty_state(self.schedule_frame, "Service not connected")
+        self._show_empty_state(self.log_frame, "Service not connected", dark=True)
+
+    def _on_mark_present_click(self):
+        if self.on_navigate:
+            self.on_navigate("submit_attendance")

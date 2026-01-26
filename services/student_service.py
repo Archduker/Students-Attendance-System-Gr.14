@@ -108,7 +108,7 @@ class StudentService:
         Returns:
             List các lớp học đang tham gia
         """
-        classes = self.class_repo.find_by_student(student_code)
+        classes = self.class_repo.get_classes_for_student(student_code)
         return [
             {
                 "class_id": cls.class_id,
@@ -118,6 +118,47 @@ class StudentService:
             }
             for cls in classes
         ]
+
+    def get_todays_sessions(self, student_code: str) -> List[Dict[str, Any]]:
+        """
+        Lấy danh sách các session học trong ngày hôm nay.
+        
+        Args:
+            student_code: Mã sinh viên
+            
+        Returns:
+            List các session trong ngày
+        """
+        # Get classes for student
+        classes = self.class_repo.get_classes_for_student(student_code)
+        
+        today = datetime.now().date()
+        sessions_today = []
+        
+        for cls in classes:
+            # Find active sessions for this class
+            # Note: This finds all sessions, we filter for today
+            all_sessions = self.attendance_session_repo.find_by_class(cls.class_id)
+            
+            for session in all_sessions:
+                if session.start_time.date() == today:
+                    sessions_today.append({
+                        "session_id": session.session_id,
+                        "class_id": cls.class_id,
+                        "class_name": cls.class_name,
+                        "subject_code": cls.subject_code,
+                        "start_time": session.start_time.strftime("%H:%M"),
+                        "end_time": session.end_time.strftime("%H:%M"),
+                        "raw_start_time": session.start_time, # For sorting
+                        "room": "Online" if session.method == AttendanceMethod.LINK_TOKEN else "TBA",
+                        "status": session.status.value,
+                        "method": session.method.value,
+                        "is_active": session.status.value == "OPEN"
+                    })
+        
+        # Sort by start time
+        sessions_today.sort(key=lambda x: x["raw_start_time"])
+        return sessions_today
     
     def submit_attendance(
         self, 
@@ -202,18 +243,26 @@ class StudentService:
     def get_attendance_history(
         self,
         student_code: str,
+        search_query: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        class_id: Optional[str] = None
+        class_id: Optional[str] = None,
+        status: Optional[str] = None,
+        sort_by: str = 'date',
+        sort_order: str = 'desc'
     ) -> List[Dict[str, Any]]:
         """
         Lấy lịch sử điểm danh của sinh viên.
         
         Args:
             student_code: Mã sinh viên
+            search_query: Từ khóa tìm kiếm (tên lớp hoặc ngày)
             start_date: Ngày bắt đầu (optional)
             end_date: Ngày kết thúc (optional)
             class_id: Lọc theo lớp học (optional)
+            status: Lọc theo trạng thái (optional)
+            sort_by: Sắp xếp theo 'date' hoặc 'class_name' (default: 'date')
+            sort_order: 'asc' hoặc 'desc' (default: 'desc')
             
         Returns:
             List các bản ghi điểm danh
@@ -239,9 +288,39 @@ class StudentService:
             session_ids = {s.session_id for s in class_sessions}
             records = [r for r in records if r.session_id in session_ids]
         
+        # Filter theo status
+        if status:
+            records = [r for r in records if r.status.value == status]
+        
+        # Helper function to get class name safely for filtering
+        def get_class_name_safe(record):
+            session = self.attendance_session_repo.find_by_id(record.session_id)
+            if not session: return ""
+            cls = self.class_repo.find_by_id(session.class_id)
+            return cls.class_name if cls else ""
+
+        # Filter theo search query (Class Name or Date)
+        if search_query:
+            query = search_query.lower()
+            filtered_records = []
+            for r in records:
+                class_name = get_class_name_safe(r).lower()
+                date_str = r.attendance_time.strftime("%d %b %Y").lower()
+                date_str_iso = r.attendance_time.strftime("%Y-%m-%d").lower()
+                
+                if query in class_name or query in date_str or query in date_str_iso:
+                    filtered_records.append(r)
+            records = filtered_records
+
         # Format và sort
         formatted_records = [self._format_attendance_record(r) for r in records]
-        formatted_records.sort(key=lambda x: x['date'], reverse=True)
+        
+        # Sort
+        reverse = (sort_order.lower() == 'desc')
+        if sort_by == 'class_name':
+            formatted_records.sort(key=lambda x: (x['class_name'] or "").lower(), reverse=reverse)
+        else: # date
+            formatted_records.sort(key=lambda x: x['date'] + x['time'], reverse=reverse)
         
         return formatted_records
     

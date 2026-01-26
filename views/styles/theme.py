@@ -43,6 +43,8 @@ COLORS = {
     # Border colors
     "border": "#E5E7EB",
     "border_focus": "#3B82F6",
+    "table_header_bg": "#F8FAFC",
+    "table_header_text": "#64748B",
 }
 
 # Dark mode colors

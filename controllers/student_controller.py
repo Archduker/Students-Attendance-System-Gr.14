@@ -75,6 +75,19 @@ class StudentController:
                 "success": False,
                 "error": f"Lỗi khi tải dashboard: {str(e)}"
             }
+
+    def handle_get_todays_sessions(self, student_code: str) -> Dict[str, Any]:
+        """
+        Xử lý request lấy danh sách session hôm nay.
+        """
+        if not student_code or not student_code.strip():
+            return {"success": False, "error": "Mã sinh viên không hợp lệ"}
+        
+        try:
+            sessions = self.student_service.get_todays_sessions(student_code.strip())
+            return {"success": True, "data": sessions}
+        except Exception as e:
+            return {"success": False, "error": f"Lỗi khi tải phiên học: {str(e)}"}
     
     def handle_submit_attendance(
         self,
@@ -147,9 +160,13 @@ class StudentController:
         Args:
             student_code: Mã sinh viên
             filters: Dict chứa các filter options:
+                - search_query: str (optional)
                 - start_date: str (YYYY-MM-DD)
                 - end_date: str (YYYY-MM-DD)
                 - class_id: str
+                - status: str
+                - sort_by: str ('date' or 'class_name')
+                - sort_order: str ('asc' or 'desc')
                 
         Returns:
             Dict với keys: success, data/error
@@ -166,11 +183,18 @@ class StudentController:
         
         try:
             # Parse filters
+            search_query = None
             start_date = None
             end_date = None
             class_id = None
+            status = None
+            sort_by = 'date'
+            sort_order = 'desc'
             
             if filters:
+                if 'search_query' in filters:
+                    search_query = filters['search_query']
+
                 if 'start_date' in filters and filters['start_date']:
                     try:
                         start_date = datetime.strptime(filters['start_date'], "%Y-%m-%d")
@@ -191,13 +215,26 @@ class StudentController:
                 
                 if 'class_id' in filters:
                     class_id = filters['class_id']
+                
+                if 'status' in filters:
+                    status = filters['status']
+                    
+                if 'sort_by' in filters:
+                    sort_by = filters['sort_by']
+                    
+                if 'sort_order' in filters:
+                    sort_order = filters['sort_order']
             
             # Get history
             history = self.student_service.get_attendance_history(
                 student_code.strip(),
+                search_query=search_query,
                 start_date=start_date,
                 end_date=end_date,
-                class_id=class_id
+                class_id=class_id,
+                status=status,
+                sort_by=sort_by,
+                sort_order=sort_order
             )
             
             return {

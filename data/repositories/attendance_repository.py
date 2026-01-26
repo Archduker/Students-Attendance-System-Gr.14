@@ -37,12 +37,12 @@ class AttendanceSessionRepository(BaseRepository[AttendanceSession]):
             end_time=datetime.fromisoformat(row["end_time"]),
             method=AttendanceMethod.from_string(row["attendance_method"]),
             status=SessionStatus(row["status"]),
-            attendance_link=row.get("attendance_link"),
-            token=row.get("token"),
-            qr_window_minutes=row.get("qr_window_minutes", 1),
-            late_window_minutes=row.get("late_window_minutes", 15),
+            attendance_link=row["attendance_link"],
+            token=row["token"],
+            qr_window_minutes=row["qr_window_minutes"] if row["qr_window_minutes"] else 1,
+            late_window_minutes=row["late_window_minutes"] if row["late_window_minutes"] else 15,
         )
-    
+
     def _entity_to_dict(self, entity: AttendanceSession) -> Dict[str, Any]:
         """Chuyển đổi AttendanceSession thành dictionary."""
         return {
@@ -99,7 +99,7 @@ class AttendanceRecordRepository(BaseRepository[AttendanceRecord]):
     def _row_to_entity(self, row) -> AttendanceRecord:
         """Chuyển đổi row thành AttendanceRecord."""
         attendance_time = None
-        if row.get("attendance_time"):
+        if row["attendance_time"]:
             attendance_time = datetime.fromisoformat(row["attendance_time"])
         
         return AttendanceRecord(
@@ -108,7 +108,7 @@ class AttendanceRecordRepository(BaseRepository[AttendanceRecord]):
             student_code=row["student_code"],
             status=AttendanceStatus.from_string(row["status"]),
             attendance_time=attendance_time,
-            remark=row.get("remark"),
+            remark=row["remark"],
         )
     
     def _entity_to_dict(self, entity: AttendanceRecord) -> Dict[str, Any]:

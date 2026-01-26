@@ -15,6 +15,9 @@ try:
     HAS_QR = True
 except ImportError:
     HAS_QR = False
+    # Dummy class for type hinting if PIL is missing
+    class Image:
+        class Image: pass
 
 from .security_service import SecurityService
 
