@@ -61,14 +61,14 @@ class UserDialog(ctk.CTkToplevel):
         
         # Configure dialog
         self.title("Add New User" if mode == "create" else "Edit User")
-        self.geometry("500x600")
+        self.geometry("500x750")  # Increased height to show buttons
         self.resizable(False, False)
         
         # Center dialog
         self.update_idletasks()
         x = (self.winfo_screenwidth() // 2) - (500 // 2)
-        y = (self.winfo_screenheight() // 2) - (600 // 2)
-        self.geometry(f"500x600+{x}+{y}")
+        y = (self.winfo_screenheight() // 2) - (750 // 2)  # Updated for new height
+        self.geometry(f"500x750+{x}+{y}")
         
         # Make modal
         self.transient(parent)
@@ -94,10 +94,18 @@ class UserDialog(ctk.CTkToplevel):
         )
         title_label.pack(pady=(0, 20))
         
-        # Form fields
-        self._create_form(container)
+        # Scrollable form container
+        form_container = ctk.CTkScrollableFrame(
+            container,
+            fg_color="transparent",
+            height=500  # Reduced to fit buttons (750 - 60 padding - 50 title - 60 buttons - 80 extra = 500)
+        )
+        form_container.pack(fill="x", pady=(0, 5))  # Reduced bottom padding from 10 to 5
         
-        # Buttons
+        # Form fields
+        self._create_form(form_container)
+        
+        # Buttons (outside scrollable area, always visible)
         self._create_buttons(container)
     
     def _create_form(self, parent):
@@ -139,7 +147,7 @@ class UserDialog(ctk.CTkToplevel):
             font=ctk.CTkFont(size=13, weight="bold"),
             anchor="w"
         )
-        label.grid(row=3, column=0, sticky="w", pady=(15, 5))
+        label.grid(row=6, column=0, sticky="w", pady=(15, 5))  # Changed from row=3 to row=6
         
         self.role_var = ctk.StringVar(
             value=self.user_data.get("role", "STUDENT")
@@ -151,7 +159,7 @@ class UserDialog(ctk.CTkToplevel):
             width=440,
             height=35
         )
-        self.role_menu.grid(row=4, column=0, sticky="ew", pady=(0, 10))
+        self.role_menu.grid(row=7, column=0, sticky="ew", pady=(0, 10))  # Changed from row=4 to row=7
         
         # Additional fields based on role
         self._create_role_specific_fields(form_frame)
@@ -205,7 +213,7 @@ class UserDialog(ctk.CTkToplevel):
             font=ctk.CTkFont(size=13, weight="bold"),
             anchor="w"
         )
-        label.grid(row=10, column=0, sticky="w", pady=(15, 5))
+        label.grid(row=8, column=0, sticky="w", pady=(15, 5))  # Changed to row 8
         
         self.teacher_code_entry = ctk.CTkEntry(
             parent,
@@ -213,7 +221,7 @@ class UserDialog(ctk.CTkToplevel):
             width=440,
             height=35
         )
-        self.teacher_code_entry.grid(row=11, column=0, sticky="ew", pady=(0, 10))
+        self.teacher_code_entry.grid(row=9, column=0, sticky="ew", pady=(0, 10))  # Changed to row 9
         
         # Student Code (for students)
         label = ctk.CTkLabel(
@@ -222,7 +230,7 @@ class UserDialog(ctk.CTkToplevel):
             font=ctk.CTkFont(size=13, weight="bold"),
             anchor="w"
         )
-        label.grid(row=12, column=0, sticky="w", pady=(15, 5))
+        label.grid(row=10, column=0, sticky="w", pady=(15, 5))  # Changed to row 10
         
         self.student_code_entry = ctk.CTkEntry(
             parent,
@@ -230,7 +238,7 @@ class UserDialog(ctk.CTkToplevel):
             width=440,
             height=35
         )
-        self.student_code_entry.grid(row=13, column=0, sticky="ew", pady=(0, 10))
+        self.student_code_entry.grid(row=11, column=0, sticky="ew", pady=(0, 10))  # Changed to row 11
     
     def _create_password_section(self, parent):
         """Tạo password section."""
@@ -241,12 +249,12 @@ class UserDialog(ctk.CTkToplevel):
             font=ctk.CTkFont(size=11),
             text_color="gray"
         )
-        info_label.grid(row=14, column=0, sticky="w", pady=(10, 0))
+        info_label.grid(row=12, column=0, sticky="w", pady=(10, 0))  # Changed from row=14 to row=12
     
     def _create_buttons(self, parent):
         """Tạo action buttons."""
         btn_frame = ctk.CTkFrame(parent, fg_color="transparent")
-        btn_frame.pack(side="bottom", fill="x", pady=(20, 0))
+        btn_frame.pack(side="bottom", fill="x", pady=(5, 0))  # Reduced from 20 to 5
         
         # Cancel button
         cancel_btn = ctk.CTkButton(

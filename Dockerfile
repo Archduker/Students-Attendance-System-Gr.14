@@ -9,7 +9,6 @@ COPY requirements.txt .
 
 # 4. Install dependencies
 RUN pip install -r requirements.txt
-RUN apt-get update && apt-get install -y tk && rm -rf /var/lib/apt/lists/*
 
 # 5. Copy toàn bộ source code
 COPY . .

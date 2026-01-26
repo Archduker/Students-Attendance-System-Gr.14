@@ -66,7 +66,8 @@ class SystemReportsPage(ctk.CTkFrame):
             width=180,
             height=36,
             corner_radius=8,
-            hover_color="#2563EB"
+            hover_color="#2563EB",
+            command=self._handle_generate_report  # Added command handler
         ).pack(side="right")
     
     def _create_stats_cards(self, parent):
@@ -226,8 +227,66 @@ class SystemReportsPage(ctk.CTkFrame):
             fg_color="#3B82F6",
             text_color="white",
             hover_color="#2563EB",
-            corner_radius=6
+            corner_radius=6,
+            command=lambda: self._handle_download_report(title, formats[0] if formats else "PDF")  # Download first available format
         ).pack(side="left", padx=(10, 0))
         
         # Separator
         ctk.CTkFrame(parent, height=1, fg_color="#F1F5F9").pack(fill="x", pady=5)
+    
+    def _handle_generate_report(self):
+        """Handle Generate New Report button click."""
+        from tkinter import messagebox
+        
+        # Show dialog asking for report type
+        messagebox.showinfo(
+            "Generate Report",
+            "Report generation feature coming soon!\n\nYou can select:\n" +
+            "• Monthly Attendance Summary\n" +
+            "• Faculty Performance Review\n" +
+            "• Student Retention Analysis\n" +
+            "• Custom Report"
+        )
+    
+    def _handle_download_report(self, report_title, format_type):
+        """Handle report download."""
+        from tkinter import filedialog, messagebox
+        import os
+        
+        # File extension based on format
+        ext_map = {
+            "PDF": ".pdf",
+            "XLSX": ".xlsx",
+            "CSV": ".csv"
+        }
+        ext = ext_map.get(format_type, ".pdf")
+        
+        # Generate filename from title
+        filename = report_title.replace(" ", "_").lower() + ext
+        
+        # Ask user where to save
+        save_path = filedialog.asksaveasfilename(
+            title=f"Save {report_title}",
+            defaultextension=ext,
+            initialfile=filename,
+            filetypes=[(f"{format_type} files", f"*{ext}"), ("All files", "*.*")]
+        )
+        
+        if save_path:
+            try:
+                # Create placeholder file (in a real app, generate actual report)
+                with open(save_path, 'w') as f:
+                    f.write(f"# {report_title}\n\n")
+                    f.write(f"Report Type: {format_type}\n")
+                    f.write(f"Generated: {os.path.basename(save_path)}\n\n")
+                    f.write("[This is a placeholder. Actual report generation coming soon.]\n")
+                
+                messagebox.showinfo(
+                    "Download Complete",
+                    f"Report saved successfully!\n\nLocation: {save_path}"
+                )
+            except Exception as e:
+                messagebox.showerror(
+                    "Download Failed",
+                    f"Failed to save report:\n{str(e)}"
+                )
