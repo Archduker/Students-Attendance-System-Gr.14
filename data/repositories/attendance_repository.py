@@ -64,6 +64,12 @@ class AttendanceSessionRepository(BaseRepository[AttendanceSession]):
             "late_window_minutes": entity.late_window_minutes,
         }
     
+    def find_by_id(self, session_id: str) -> Optional[AttendanceSession]:
+        """Override find_by_id to use session_id."""
+        query = f"SELECT * FROM {self.table_name} WHERE session_id = ?"
+        row = self.db.fetch_one(query, (session_id,))
+        return self._row_to_entity(row) if row else None
+    
     def find_by_class(self, class_id: str) -> List[AttendanceSession]:
         """Lấy tất cả sessions của một lớp."""
         query = f"SELECT * FROM {self.table_name} WHERE class_id = ? ORDER BY start_time DESC"

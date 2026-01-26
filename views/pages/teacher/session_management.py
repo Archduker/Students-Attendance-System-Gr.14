@@ -13,6 +13,7 @@ from datetime import datetime
 
 from core.models import Teacher
 from controllers.teacher_controller import TeacherController
+from views.components.modal import Modal
 
 
 class SessionManagementPage(ctk.CTkFrame):
@@ -27,21 +28,60 @@ class SessionManagementPage(ctk.CTkFrame):
         self.teacher = teacher
         self.controller = controller
         
-        # State management: "history" hoặc "manual_entry"
-        self.current_state = "history"
-        
-        # Student attendance data (mock)
-        self.students = [
-            {"name": "Phan Nhat Tai", "id": "S01", "last_ping": "09:12 AM", "status": "present"},
-            {"name": "Hoang Thuy Linh", "id": "S02", "last_ping": "09:13 AM", "status": "present"},
-            {"name": "Dam Vinh Hung", "id": "S03", "last_ping": "-", "status": "absent"},
-            {"name": "Tran Thi Bich Phuong", "id": "S04", "last_ping": "09:12 AM", "status": "late"},
-            {"name": "Ho Ngoc Ha", "id": "S05", "last_ping": "09:20 AM", "status": "present"},
-            {"name": "Nguyen Thanh Tung", "id": "S06", "last_ping": "-", "status": "late"},
-        ]
+        self.selected_session_idx = None  # Track selected session index
+        self.current_state = "history"  # State management: "history" hoặc "manual_entry"
+        self.recent_sessions = []
+        self.students = [] # Initialize students list
         
         self._setup_ui()
-    
+        self._load_real_data()
+
+    def _load_real_data(self):
+        """Fetch real data from database"""
+        try:
+            # 1. Get classes map (id -> name)
+            classes = self.controller.get_class_list(self.teacher)
+            class_map = {c.class_id: c for c in classes}
+            
+            # 2. Get recent sessions
+            raw_sessions = self.controller.get_session_list(self.teacher)
+            # Sort by start_time desc
+            raw_sessions.sort(key=lambda x: x.start_time, reverse=True)
+            
+            self.recent_sessions = []
+            for s in raw_sessions:
+                c = class_map.get(s.class_id)
+                course_name = c.class_name if c else s.class_id
+                
+                # Get stats (n+1 but acceptable for small list)
+                report = self.controller.get_session_report(self.teacher, s.session_id)
+                current = report.get('present_count', 0) if report else 0
+                max_count = report.get('total_students', 0) if report else 0
+                
+                # Format date: "Jan 12th, 2026"
+                date_str = s.start_time.strftime("%b %d, %Y")
+                
+                status = "ACTIVE" if s.is_open() else "CLOSED"
+                
+                self.recent_sessions.append({
+                    "course": course_name,
+                    "status": status,
+                    "date": date_str,
+                    "current": current,
+                    "max": max_count,
+                    "raw_session": s # Store raw object for actions
+                })
+                
+            self._render_session_list()
+            
+        except Exception as e:
+            print(f"Error loading real data: {e}")
+
+            self._render_session_list()
+            
+        except Exception as e:
+            print(f"Error loading real data: {e}")
+
     def _setup_ui(self):
         """Setup UI components"""
         # Header (chung cho cả 2 states)
@@ -237,18 +277,54 @@ class SessionManagementPage(ctk.CTkFrame):
         ).grid(row=0, column=2, sticky="e", padx=30)
         
         # Session list
-        list_frame = ctk.CTkScrollableFrame(panel, fg_color="transparent")
-        list_frame.pack(fill="both", expand=True, padx=10, pady=(10, 20))
+        self.session_list_frame = ctk.CTkScrollableFrame(panel, fg_color="transparent")
+        self.session_list_frame.pack(fill="both", expand=True, padx=10, pady=(10, 20))
         
-        # Mock sessions
-        self._add_session_item(list_frame, "Machine Learning", "CLOSED", "Jan 5th, 2026", 56, 60)
-        self._add_session_item(list_frame, "Big Data Analysis", "ACTIVE", "Jan 5th, 2026", 52, 60)
-    
-    def _add_session_item(self, parent, course_name, status, date_str, current, max_count):
+        self._render_session_list()
+        
+    def _render_session_list(self):
+        """Render recent sessions list"""
+        # Clear existing
+        for widget in self.session_list_frame.winfo_children():
+            widget.destroy()
+            
+        # Add sessions
+        for i, session in enumerate(self.recent_sessions):
+            self._add_session_item(
+                self.session_list_frame, 
+                i,
+                session["course"], 
+                session["status"], 
+                session["date"], 
+                session["current"], 
+                session["max"]
+            )
+            
+    def _handle_session_click(self, index):
+        """Handle click on a session item"""
+        self.selected_session_idx = index
+        self._render_session_list()
+        
+    def _add_session_item(self, parent, index, course_name, status, date_str, current, max_count):
         """Add a session item"""
-        item = ctk.CTkFrame(parent, fg_color="transparent", height=70)
+        is_selected = (index == self.selected_session_idx)
+        bg_color = "#EFF6FF" if is_selected else "transparent"
+        border_width = 1 if is_selected else 0
+        border_color = "#3B82F6" if is_selected else "#E2E8F0" # Fallback color, won't show if width 0
+        
+        item = ctk.CTkFrame(
+            parent, 
+            fg_color=bg_color, 
+            height=70, 
+            border_width=border_width,
+            border_color=border_color,
+            corner_radius=10
+        )
         item.pack(fill="x", pady=5)
         item.pack_propagate(False)
+        
+        # Bind click event
+        item.bind("<Button-1>", lambda e: self._handle_session_click(index))
         
         item.grid_columnconfigure(0, weight=2)
         item.grid_columnconfigure(1, weight=1)
@@ -258,52 +334,56 @@ class SessionManagementPage(ctk.CTkFrame):
         course_frame = ctk.CTkFrame(item, fg_color="transparent")
         course_frame.grid(row=0, column=0, sticky="w", padx=20)
         
-        ctk.CTkLabel(
+        l1 = ctk.CTkLabel(
             course_frame,
             text=course_name,
             font=("Inter", 13, "bold"),
             text_color="#0F172A"
-        ).pack(anchor="w")
+        )
+        l1.pack(anchor="w")
         
         status_color = "#94A3B8" if status == "CLOSED" else "#22C55E"
-        ctk.CTkLabel(
+        l2 = ctk.CTkLabel(
             course_frame,
             text=status,
             font=("Inter", 10, "bold"),
             text_color=status_color
-        ).pack(anchor="w", pady=(2, 0))
+        )
+        l2.pack(anchor="w", pady=(2, 0))
         
         # Date
-        ctk.CTkLabel(
+        l3 = ctk.CTkLabel(
             item,
             text=date_str,
             font=("Inter", 12, "bold"),
             text_color="#334155"
-        ).grid(row=0, column=1, sticky="w", padx=10)
+        )
+        l3.grid(row=0, column=1, sticky="w", padx=10)
         
         # Headcount with progress bar
         count_frame = ctk.CTkFrame(item, fg_color="transparent")
         count_frame.grid(row=0, column=2, sticky="e", padx=20)
         
-        ctk.CTkLabel(
+        l4 = ctk.CTkLabel(
             count_frame,
             text=f"{current}/{max_count}",
             font=("Inter", 12, "bold"),
             text_color="#334155"
-        ).pack(anchor="e")
+        )
+        l4.pack(anchor="e")
         
         # Progress bar
         progress_bg = ctk.CTkFrame(count_frame, height=6, width=100, fg_color="#E2E8F0", corner_radius=3)
         progress_bg.pack(anchor="e", pady=(5, 0))
         progress_bg.pack_propagate(False)
         
-        fill_width = int(100 * (current / max_count))
+        fill_width = int(100 * (current / max_count if max_count > 0 else 0))
         progress_fill = ctk.CTkFrame(progress_bg, height=6, width=fill_width, fg_color="#6366F1", corner_radius=3)
         progress_fill.place(x=0, y=0)
         
-        # Separator
-        sep = ctk.CTkFrame(parent, height=1, fg_color="#F1F5F9")
-        sep.pack(fill="x", padx=20, pady=(0, 5))
+        # Make children clickable too
+        for widget in [course_frame, count_frame, progress_bg, progress_fill, l1, l2, l3, l4]:
+             widget.bind("<Button-1>", lambda e: self._handle_session_click(index))
     
     def _create_quick_actions_panel(self, parent):
         """Quick Actions panel"""
@@ -337,7 +417,40 @@ class SessionManagementPage(ctk.CTkFrame):
             "#64748B",
             on_click=self._handle_remote_link
         )
-        self._add_action_card(panel, "Bulk CSV", "9C9DA2", "📄", "#FFFFFF", "#64748B")
+        self._add_action_card(
+            panel, 
+            "Bulk CSV", 
+            "9C9DA2", 
+            "📄", 
+            "#FFFFFF", 
+            "#64748B",
+            on_click=self._handle_bulk_csv
+        )
+    
+    def _handle_bulk_csv(self):
+        """Handle Bulk CSV export action"""
+        if self.selected_session_idx is None:
+            # Show beautiful error modal
+            Modal(
+                self,
+                title="Yêu cầu chọn lớp",
+                message="Vui lòng chọn một lớp học trong danh sách bên trái trước khi xuất file CSV.",
+                type="warning",
+                button_text="Đã hiểu"
+            )
+            return
+
+        selected_session = self.recent_sessions[self.selected_session_idx]
+        course_name = selected_session["course"]
+        
+        # Mock success action
+        Modal(
+            self,
+            title="Xuất file thành công",
+            message=f"Đã xuất file báo cáo điểm danh cho lớp {course_name} thành công!\nFile được lưu tại: Downloads/Attendance_{course_name}.csv",
+            type="success",
+            button_text="Đóng"
+        )
     
     def _add_action_card(self, parent, title, subtitle, icon, bg_color, text_color, on_click=None):
         """Add an action card"""

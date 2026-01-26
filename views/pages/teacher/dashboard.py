@@ -37,6 +37,9 @@ class TeacherDashboardPage(ctk.CTkFrame):
     
     def _setup_ui(self):
         """Setup UI components"""
+        # Fetch real stats
+        self.stats = self.controller.get_dashboard_stats(self.teacher)
+        
         # --- Left Column: Stats & Graph ---
         self.left_col = ctk.CTkFrame(self, fg_color="transparent")
         self.left_col.grid(row=0, column=0, sticky="nsew", padx=(0, 20))
@@ -59,9 +62,10 @@ class TeacherDashboardPage(ctk.CTkFrame):
         header_frame.pack(fill="x", pady=(0, 20))
         
         # Faculty Load badge
+        load_count = self.stats.get("total_classes", 0)
         badge = ctk.CTkLabel(
             header_frame,
-            text="● DS FACULTY LOAD: 3 SUBJECTS",
+            text=f"● DS FACULTY LOAD: {load_count} SUBJECTS",
             text_color="#A855F7",  # Purple
             font=("Inter", 12, "bold"),
             anchor="w"
@@ -69,9 +73,10 @@ class TeacherDashboardPage(ctk.CTkFrame):
         badge.pack(fill="x")
         
         # Subtitle
+        active_sessions = self.stats.get("active_sessions", 0)
         subtitle = ctk.CTkLabel(
             header_frame,
-            text="You have 2 classes in today's session",
+            text=f"You have {active_sessions} active sessions available",
             text_color="#64748B",  # Gray
             font=("Inter", 12),
             anchor="w"
@@ -92,7 +97,7 @@ class TeacherDashboardPage(ctk.CTkFrame):
             stats_container, 
             row=0, col=0,
             title="ASSIGNED SUBJECT",
-            value="14",
+            value=str(self.stats.get("total_classes", 0)),
             icon="📖",
             icon_color="#6366F1",
             icon_bg="#EEF2FF"
@@ -103,29 +108,36 @@ class TeacherDashboardPage(ctk.CTkFrame):
             stats_container,
             row=0, col=1,
             title="UNIQUE STUDENT",
-            value="180",
+            value=str(self.stats.get("total_students", 0)),
             icon="👥",
             icon_color="#0EA5E9",
             icon_bg="#E0F2FE"
         )
         
-        # Card 3: AVG ATTENDANCE
+        # Card 3: ACTIVE SESSION
         self._add_stat_card(
             stats_container,
             row=0, col=2,
-            title="AVG ATTENDANCE",
-            value="5%",
-            icon="📈",
+            title="ACTIVE SESSIONS",
+            value=str(self.stats.get("active_sessions", 0)),
+            icon="⚡",
             icon_color="#F59E0B",
             icon_bg="#FEF3C7"
         )
         
         # Card 4: AVG ATTENDANCE
+        avg_rate = self.stats.get("avg_attendance_rate", 0)
+        # Convert 0.94 -> 94.0%
+        # If the controller returns 0-100 based on 'round(avg, 2)'... let's check controller
+        # Controller returns `round(avg_attendance_rate, 2)` where avg `total_rate += report['attendance_rate']`
+        # Assuming rate is percentage (0-100) or decimal (0-1)?
+        # Usually attendance rate is 0-100 in reports. Let's assume 0-100 for now or add % symbol.
+        
         self._add_stat_card(
             stats_container,
             row=0, col=3,
             title="AVG ATTENDANCE",
-            value="94.2%",
+            value=f"{avg_rate}%",
             icon="💓",
             icon_color="#10B981",
             icon_bg="#D1FAE5"

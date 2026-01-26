@@ -290,7 +290,7 @@ def run_gui(app_config: dict):
                 elif page_key == "session_detail":
                     SessionDetailPage(layout.content_area, session_id=None)
                 elif page_key == "history":
-                    HistoryPage(layout.content_area)
+                    HistoryPage(layout.content_area, teacher=user, controller=teacher_controller)
                 elif page_key == "profile":
                     TeacherProfilePage(layout.content_area, teacher=user)
                 elif page_key == "logout":
