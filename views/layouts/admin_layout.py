@@ -34,12 +34,17 @@ class AdminLayout(ctk.CTkFrame):
         self._create_sidebar()
         self._create_main_area()
     
+    def set_active_page(self, page_key: str):
+        """Update active page and refresh menu."""
+        self.current_path = page_key
+        self._refresh_menu_buttons()
+
     def _create_sidebar(self):
         """Create dark sidebar with navigation."""
         self.sidebar_frame = ctk.CTkFrame(
             self, 
-            width=240, 
-            fg_color="#1E293B",  # Dark blue-gray
+            width=260, 
+            fg_color="#0F172A",  # Darker Slate 900
             corner_radius=0
         )
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
@@ -47,29 +52,40 @@ class AdminLayout(ctk.CTkFrame):
         
         # Logo/Branding
         logo_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
-        logo_frame.pack(fill="x", padx=20, pady=30)
+        logo_frame.pack(fill="x", padx=30, pady=(40, 30))
         
+        # Logo Icon replacement (Text for now)
         ctk.CTkLabel(
             logo_frame,
-            text="🎓 UNIATTEND",
-            font=("Inter", 16, "bold"),
+            text="🎓",
+            font=("Inter", 24),
+            text_color="#A855F7"
+        ).pack(side="left", padx=(0, 10))
+        
+        branding_text = ctk.CTkFrame(logo_frame, fg_color="transparent")
+        branding_text.pack(side="left")
+        
+        ctk.CTkLabel(
+            branding_text,
+            text="UNIATTEND",
+            font=("Inter", 20, "bold"),
             text_color="#A855F7"  # Purple
-        ).pack(anchor="w")
+        ).pack(anchor="w", pady=(0, 0))
         
         ctk.CTkLabel(
-            logo_frame,
+            branding_text,
             text="INSTITUTIONAL",
-            font=("Inter", 10),
+            font=("Inter", 10, "bold"),
             text_color="#64748B"
-        ).pack(anchor="w")
+        ).pack(anchor="w", pady=(0, 0))
         
         # Main Menu Label
         ctk.CTkLabel(
             self.sidebar_frame,
             text="MAIN MENU",
-            font=("Inter", 10, "bold"),
+            font=("Inter", 11, "bold"),
             text_color="#64748B"
-        ).pack(fill="x", padx=20, pady=(20, 10), anchor="w")
+        ).pack(fill="x", padx=30, pady=(10, 15), anchor="w")
         
         # Menu Items
         self.menu_items = [
@@ -81,74 +97,63 @@ class AdminLayout(ctk.CTkFrame):
         
         # Container for menu buttons
         self.menu_buttons_container = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
-        self.menu_buttons_container.pack(fill="x", padx=0, pady=0)
+        self.menu_buttons_container.pack(fill="x", padx=15, pady=0)
         
         self._refresh_menu_buttons()
         
         # Spacer to push bottom elements down
         ctk.CTkFrame(self.sidebar_frame, fg_color="transparent").pack(fill="both", expand=True)
         
-        # Sign Out button (pack first so it appears above status)
-        sign_out_btn = ctk.CTkButton(
-            self.sidebar_frame,
-            text="↩ Sign Out",
-            font=("Inter", 11),
-            fg_color="transparent",
-            text_color="#94A3B8",
-            hover_color="#334155",
-            anchor="w",
-            command=lambda: self.on_navigate("logout") if self.on_navigate else None
-        )
-        sign_out_btn.pack(side="bottom", fill="x", padx=20, pady=(10, 5))
-        
         # Status Section (at bottom)
         status_frame = ctk.CTkFrame(
             self.sidebar_frame,
-            fg_color="#334155",  # Lighter dark
-            corner_radius=12,
-            height=70
+            fg_color="#1E293B",  # Lighter dark for status
+            corner_radius=15,
+            height=80
         )
-        status_frame.pack(side="bottom", fill="x", padx=20, pady=(0, 20))
+        status_frame.pack(side="bottom", fill="x", padx=20, pady=(0, 30))
         status_frame.pack_propagate(False)
         
         # STATUS label
         ctk.CTkLabel(
             status_frame,
             text="STATUS",
-            font=("Inter", 9, "bold"),
+            font=("Inter", 10, "bold"),
             text_color="#64748B"
-        ).pack(anchor="w", padx=15, pady=(10, 0))
+        ).pack(anchor="w", padx=20, pady=(15, 0))
         
         # SYSTEM LIVE with green dot
         live_frame = ctk.CTkFrame(status_frame, fg_color="transparent")
-        live_frame.pack(anchor="w", padx=15, pady=(5, 10))
+        live_frame.pack(anchor="w", padx=20, pady=(5, 10))
         
         ctk.CTkLabel(
             live_frame,
-            text="● SYSTEM LIVE",
-            font=("Inter", 11, "bold"),
-            text_color="#22C55E"  # Green
-        ).pack(side="left")
-    
-    
-    def _create_menu_button(self, label: str, key: str):
-        """Create a menu button."""
-        is_active = self.current_path == key
+            text="●",
+            font=("Inter", 14),
+            text_color="#22C55E"
+        ).pack(side="left", padx=(0, 8))
         
-        btn = ctk.CTkButton(
+        ctk.CTkLabel(
+            live_frame,
+            text="SYSTEM LIVE",
+            font=("Inter", 12, "bold"),
+            text_color="#22C55E"
+        ).pack(side="left")
+        
+        # Sign Out button
+        sign_out_btn = ctk.CTkButton(
             self.sidebar_frame,
-            text=label,
-            font=("Inter", 12, "bold" if is_active else "normal"),
-            fg_color="#0EA5E9" if is_active else "transparent",  # Cyan for active
-            text_color="white" if is_active else "#94A3B8",
-            hover_color="#0284C7" if is_active else "#334155",
+            text="↩ Sign Out",
+            font=("Inter", 12),
+            fg_color="transparent",
+            text_color="#94A3B8",
+            hover_color="#334155",
             anchor="w",
-            height=45,
-            corner_radius=10,
-            command=lambda: self.on_navigate(key) if self.on_navigate else None
+            height=40,
+            command=lambda: self.on_navigate("logout") if self.on_navigate else None
         )
-        btn.pack(fill="x", padx=20, pady=3)
-    
+        sign_out_btn.pack(side="bottom", fill="x", padx=30, pady=(10, 10))
+
     def _refresh_menu_buttons(self):
         """Refresh menu buttons to update active state."""
         # Clear existing buttons
@@ -159,20 +164,26 @@ class AdminLayout(ctk.CTkFrame):
         for label, key in self.menu_items:
             is_active = self.current_path == key
             
+            # Common styling
+            btn_fg = "#0EA5E9" if is_active else "transparent"  # Sky 500 for active
+            text_color = "white" if is_active else "#94A3B8"
+            hover_color = "#0284C7" if is_active else "#1E293B"
+            font_weight = "bold" if is_active else "normal"
+            
             btn = ctk.CTkButton(
                 self.menu_buttons_container,
                 text=label,
-                font=("Inter", 12, "bold" if is_active else "normal"),
-                fg_color="#0EA5E9" if is_active else "transparent",
-                text_color="white" if is_active else "#94A3B8",
-                hover_color="#0284C7" if is_active else "#334155",
+                font=("Inter", 13, font_weight),
+                fg_color=btn_fg,
+                text_color=text_color,
+                hover_color=hover_color,
                 anchor="w",
-                height=45,
+                height=50,
                 corner_radius=10,
                 command=lambda k=key: self.on_navigate(k) if self.on_navigate else None
             )
-            btn.pack(fill="x", padx=20, pady=3)
-    
+            btn.pack(fill="x", padx=0, pady=5)
+
     def _create_main_area(self):
         """Create main content area with header."""
         # Main container
@@ -186,22 +197,22 @@ class AdminLayout(ctk.CTkFrame):
         
         # Content Area
         self.content_area = ctk.CTkFrame(main_container, fg_color="transparent")
-        self.content_area.grid(row=1, column=0, sticky="nsew", padx=20, pady=20)
+        self.content_area.grid(row=1, column=0, sticky="nsew", padx=30, pady=30)
     
     def _create_header(self, parent):
         """Create header with search and user info."""
-        header = ctk.CTkFrame(parent, fg_color="white", height=70, corner_radius=0)
+        header = ctk.CTkFrame(parent, fg_color="white", height=80, corner_radius=0)
         header.grid(row=0, column=0, sticky="ew")
         header.grid_propagate(False)
         
         header_content = ctk.CTkFrame(header, fg_color="transparent")
-        header_content.pack(fill="both", padx=30, pady=15)
+        header_content.pack(fill="both", padx=40, pady=20)
         
         # Search bar (left)
         search_frame = ctk.CTkFrame(
             header_content,
             fg_color="#F1F5F9",
-            corner_radius=20,
+            corner_radius=12,
             height=40,
             width=400
         )
@@ -213,14 +224,16 @@ class AdminLayout(ctk.CTkFrame):
             text="🔍",
             font=("Arial", 14),
             text_color="#94A3B8"
-        ).pack(side="left", padx=(15, 5))
+        ).pack(side="left", padx=(15, 10))
         
         ctk.CTkEntry(
             search_frame,
-            placeholder_text="Search...",
+            placeholder_text="Search anything...",
             border_width=0,
             fg_color="transparent",
-            font=("Inter", 12)
+            font=("Inter", 13),
+            placeholder_text_color="#94A3B8",
+            text_color="#1E293B"
         ).pack(fill="both", expand=True, padx=(0, 15))
         
         # User info (right)
@@ -234,15 +247,15 @@ class AdminLayout(ctk.CTkFrame):
         ctk.CTkLabel(
             name_frame,
             text=self.user.full_name if self.user else "Admin User",
-            font=("Inter", 12, "bold"),
+            font=("Inter", 13, "bold"),
             text_color="#0F172A",
             anchor="e"
         ).pack(anchor="e")
         
         ctk.CTkLabel(
             name_frame,
-            text="ADMIN",
-            font=("Inter", 9, "bold"),
+            text="ADMINISTRATOR",
+            font=("Inter", 10, "bold"),
             text_color="#A855F7",  # Purple
             anchor="e"
         ).pack(anchor="e")
@@ -254,8 +267,9 @@ class AdminLayout(ctk.CTkFrame):
             width=45,
             height=45,
             corner_radius=22,
-            fg_color="#A855F7",  # Purple
-            text_color="white",
+            fg_color="#F3E8FF",  # Light Purple
+            text_color="#A855F7",
             font=("Inter", 14, "bold")
         )
         avatar.pack(side="left")
+

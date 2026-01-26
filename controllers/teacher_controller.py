@@ -6,7 +6,7 @@ Controller xử lý logic cho Teacher module.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 from core.enums import AttendanceMethod, AttendanceStatus
 from core.models import Teacher
@@ -394,4 +394,86 @@ class TeacherController:
                 "success": False,
                 "message": f"Lỗi khi tạo QR code: {str(e)}"
             }
+
+    def handle_change_password(
+        self,
+        user_id: int,
+        old_password: str,
+        new_password: str
+    ) -> Dict[str, Any]:
+        """
+        Xử lý yêu cầu đổi mật khẩu.
+        """
+        if not self.auth_service:
+            return {"success": False, "message": "Service unavailable"}
+            
+        success, message = self.auth_service.change_password(user_id, old_password, new_password)
+        return {"success": success, "message": message}
+
+    def handle_update_profile(
+        self,
+        teacher_code: str,
+        profile_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Xử lý request cập nhật profile giáo viên.
+        DEPRECATED: Feature disabled locally in favor of Change Password.
+        """
+        if not teacher_code or not teacher_code.strip():
+            return {
+                "success": False,
+                "message": "Mã giáo viên không hợp lệ"
+            }
+        
+        if not profile_data:
+            return {
+                "success": False,
+                "message": "Không có dữ liệu để cập nhật"
+            }
+        
+        # Validate data
+        full_name = profile_data.get('full_name', '').strip() if profile_data.get('full_name') else None
+        email = profile_data.get('email', '').strip() if profile_data.get('email') else None
+        department = profile_data.get('department', '').strip() if profile_data.get('department') else None
+        
+        if not any([full_name, email, department]):
+            return {
+                "success": False,
+                "message": "Không có dữ liệu hợp lệ để cập nhật"
+            }
+        
+        try:
+            # Note: We need to access UserRepository to update.
+            # Currently TeacherController has access to auth_service (which usually has user_repo)
+            # or we might need to inject user_repo directly or add update method to auth_service.
+            # Checking AuthService capabilities...
+            
+            # Since we didn't inject UserRepo directly to TeacherController but AuthController has it.
+            # Best practice: Add update_profile to AuthService or inject UserRepo.
+            # Given limited scope, we check if we can access user_repo through auth_service
+            
+            if hasattr(self.auth_service, 'user_repo'):
+                 data = {"full_name": full_name, "email": email}
+                 if department:
+                     data["department"] = department
+                     
+                 success = self.auth_service.user_repo.update_teacher_profile(
+                    teacher_code.strip(),
+                    data
+                )
+                 if success:
+                     return {"success": True, "message": "Cập nhật thành công"}
+                 else:
+                     return {"success": False, "message": "Không thể cập nhật database"}
+            else:
+                 # Fallback: We need to modify TeacherController init to accept UserRepo if AuthService doesn't expose it
+                 # For now, let's assume AuthService -> UserRepo access or we modify init
+                 return {"success": False, "message": "Lỗi cấu hình: Không thể truy cập User Repository"}
+
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Lỗi hệ thống: {str(e)}"
+            }
+
 

@@ -217,3 +217,73 @@ class UserRepository(BaseRepository[User]):
         query = f"SELECT * FROM {self.table_name} WHERE user_id = ?"
         row = self.db.fetch_one(query, (user_id,))
         return self._row_to_entity(row) if row else None
+
+    def update_student_profile(self, student_code: str, data: Dict[str, Any]) -> bool:
+        """
+        Cập nhật thông tin student.
+        
+        Args:
+            student_code: Mã sinh viên
+            data: Dict chứa các trường cần update (full_name, email, class_name)
+            
+        Returns:
+            True nếu thành công
+        """
+        if not data:
+            return False
+            
+        set_clauses = []
+        values = []
+        
+        for key, value in data.items():
+            if key in ['full_name', 'email', 'class_name', 'avatar_url']:
+                set_clauses.append(f"{key} = ?")
+                values.append(value)
+                
+        if not set_clauses:
+            return False
+            
+        values.append(student_code)
+        query = f"UPDATE {self.table_name} SET {', '.join(set_clauses)} WHERE student_code = ?"
+        
+        try:
+            cursor = self.db.execute(query, tuple(values))
+            return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Error updating student profile: {e}")
+            return False
+
+    def update_teacher_profile(self, teacher_code: str, data: Dict[str, Any]) -> bool:
+        """
+        Cập nhật thông tin teacher.
+        
+        Args:
+            teacher_code: Mã giáo viên
+            data: Dict chứa các trường cần update (full_name, email, department)
+            
+        Returns:
+            True nếu thành công
+        """
+        if not data:
+            return False
+            
+        set_clauses = []
+        values = []
+        
+        for key, value in data.items():
+            if key in ['full_name', 'email', 'department', 'avatar_url']:
+                set_clauses.append(f"{key} = ?")
+                values.append(value)
+                
+        if not set_clauses:
+            return False
+            
+        values.append(teacher_code)
+        query = f"UPDATE {self.table_name} SET {', '.join(set_clauses)} WHERE teacher_code = ?"
+        
+        try:
+            cursor = self.db.execute(query, tuple(values))
+            return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Error updating teacher profile: {e}")
+            return False

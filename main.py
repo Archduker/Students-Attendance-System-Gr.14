@@ -187,7 +187,10 @@ def run_gui(app_config: dict):
             )
             
             # Initialize controller
-            student_controller = StudentController(student_service)
+            student_controller = StudentController(
+                student_service=student_service,
+                auth_service=app_config["services"]["auth"]
+            )
                 
             # Define navigation handler
             def navigate(page_key):
@@ -195,8 +198,8 @@ def run_gui(app_config: dict):
                 for child in layout.content_area.winfo_children():
                     child.destroy()
                 
-                # Update layout state (but don't rebuild sidebar)
-                layout.current_path = page_key
+                # Update layout state and refresh sidebar
+                layout.set_active_page(page_key)
                 
                 # Instantiate Page
                 if page_key == "dashboard":
@@ -223,7 +226,7 @@ def run_gui(app_config: dict):
                         student_service=student_service
                     )
                 elif page_key == "profile":
-                    ProfilePage(layout.content_area, on_navigate=navigate, user=user)
+                    ProfilePage(layout.content_area, on_navigate=navigate, user=user, controller=student_controller)
                 elif page_key == "logout":
                     auth_controller.handle_logout()
                     show_login()
@@ -279,8 +282,8 @@ def run_gui(app_config: dict):
                 for child in layout.content_area.winfo_children():
                     child.destroy()
                 
-                # Update layout state (but don't rebuild sidebar)
-                layout.current_path = page_key 
+                # Update layout state and refresh sidebar
+                layout.set_active_page(page_key)
                 
                 # Instantiate Page
                 if page_key == "dashboard":
@@ -292,7 +295,7 @@ def run_gui(app_config: dict):
                 elif page_key == "history":
                     HistoryPage(layout.content_area, teacher=user, controller=teacher_controller)
                 elif page_key == "profile":
-                    TeacherProfilePage(layout.content_area, teacher=user)
+                    TeacherProfilePage(layout.content_area, teacher=user, controller=teacher_controller)
                 elif page_key == "logout":
                     auth_controller.handle_logout()
                     show_login()
@@ -341,11 +344,8 @@ def run_gui(app_config: dict):
                 for child in layout.content_area.winfo_children():
                     child.destroy()
                 
-                # Update layout state
-                layout.current_path = page_key
-                
-                # Refresh sidebar buttons to update active state
-                layout._refresh_menu_buttons()
+                # Update layout state and refresh sidebar
+                layout.set_active_page(page_key)
                 
                 # Instantiate and pack pages
                 if page_key == "dashboard":

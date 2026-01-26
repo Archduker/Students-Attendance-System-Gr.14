@@ -25,6 +25,16 @@ class StudentLayout(ctk.CTkFrame):
         self._create_sidebar()
         self._create_main_area()
 
+    
+    def set_active_page(self, page_key: str):
+        """Update active page and refresh menu."""
+        # Ensure clean key comparison
+        self.current_path = page_key.strip()
+        print(f"DEBUG: Navigation -> {self.current_path}") # Debug print
+        self._refresh_menu_buttons()
+        # Force redraw to ensure visual update immediately
+        self.update_idletasks()
+
     def _create_sidebar(self):
         """Builds the distinct dark blue sidebar"""
         self.sidebar_frame = ctk.CTkFrame(
@@ -56,11 +66,19 @@ class StudentLayout(ctk.CTkFrame):
         # 2. Menu Section
         ctk.CTkLabel(self.sidebar_frame, text="MAIN MENU", text_color="#64748B", font=("Inter", 10, "bold"), anchor="w").pack(fill="x", padx=25, pady=(20, 10))
         
-        # Menu Items
-        self._add_menu_item("Dashboard", "dashboard", "88") # Icon placeholder
-        self._add_menu_item("Submit Attendance", "submit_attendance", "📅")
-        self._add_menu_item("History", "history", "🕒")
-        self._add_menu_item("Profile", "profile", "👤")
+        # Menu Items Definition
+        self.menu_items = [
+            ("Dashboard", "dashboard", "88"),
+            ("Submit Attendance", "submit_attendance", "📅"),
+            ("History", "history", "🕒"),
+            ("Profile", "profile", "👤")
+        ]
+        
+        # Container for menu buttons
+        self.menu_buttons_container = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
+        self.menu_buttons_container.pack(fill="x", padx=0, pady=0)
+        
+        self._refresh_menu_buttons()
 
         # 3. Bottom Status
         self.bottom_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
@@ -105,28 +123,35 @@ class StudentLayout(ctk.CTkFrame):
         import webbrowser
         webbrowser.open("http://localhost:8989")
 
+    def _refresh_menu_buttons(self):
+        """Refresh menu buttons to update active state."""
+        # Clear existing buttons
+        for widget in self.menu_buttons_container.winfo_children():
+            widget.destroy()
+            
+        for label, key, icon in self.menu_items:
+            self._add_menu_item(label, key, icon)
+
     def _add_menu_item(self, label, key, icon):
+        # Comparison with safe strip and lowercase handling if needed (though keys are lowercase here)
         active = (self.current_path == key)
         
         bg_color = "#1E293B" if active else "transparent" # Highlight active
         text_color = "#38BDF8" if active else "#94A3B8"
-        border_color = "#38BDF8" if active else "transparent"
+        font_weight = "bold" if active else "normal"
         
         btn = ctk.CTkButton(
-            self.sidebar_frame,
+            self.menu_buttons_container,
             text=f"  {icon}   {label}",
             anchor="w",
             height=45,
             fg_color=bg_color,
             text_color=text_color,
-            font=("Inter", 12, "bold" if active else "normal"),
+            font=("Inter", 12, font_weight),
             hover_color="#1E293B",
             corner_radius=10,
-            command=lambda: self.on_navigate(key) if self.on_navigate else None
+            command=lambda k=key: self.on_navigate(k) if self.on_navigate else None
         )
-        
-        if active:
-             pass # Customtkinter border params if needed, or stick to bg color
              
         btn.pack(fill="x", padx=15, pady=4)
 

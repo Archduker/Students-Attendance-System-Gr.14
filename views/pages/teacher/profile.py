@@ -9,6 +9,8 @@ Match UI from Image 5.
 import customtkinter as ctk
 from typing import Optional
 from core.models import Teacher
+from views.components.change_password_modal import ChangePasswordModal
+from tkinter import messagebox
 
 class ProfilePage(ctk.CTkFrame):
     """
@@ -16,10 +18,11 @@ class ProfilePage(ctk.CTkFrame):
     Matches Image 5 UI.
     """
     
-    def __init__(self, parent, teacher: Teacher = None):
+    def __init__(self, parent, teacher: Teacher = None, controller = None):
         super().__init__(parent, fg_color="transparent")
         self.pack(expand=True, fill="both")
         self.teacher = teacher
+        self.controller = controller
         
         # Grid layout: Main (Left) + Sidebar (Right)
         self.grid_columnconfigure(0, weight=3)
@@ -43,6 +46,8 @@ class ProfilePage(ctk.CTkFrame):
         
         self._create_quick_settings(self.right_col)
         self._create_support_card(self.right_col)
+        
+    # ... (omitted header methods) ...
 
     def _create_profile_header(self, parent):
         card = ctk.CTkFrame(parent, fg_color="white", corner_radius=20, border_width=1, border_color="#E2E8F0")
@@ -52,7 +57,6 @@ class ProfilePage(ctk.CTkFrame):
         content.pack(padx=30, pady=30, fill="x")
         
         # Avatar (Large)
-        # Get initials from user name
         if self.teacher and self.teacher.full_name:
             initials = "".join([word[0].upper() for word in self.teacher.full_name.split()[:2]])
         else:
@@ -68,7 +72,6 @@ class ProfilePage(ctk.CTkFrame):
         info = ctk.CTkFrame(content, fg_color="transparent")
         info.pack(side="left")
         
-        # Use dynamic user data
         name = self.teacher.full_name if self.teacher else "Teacher"
         ctk.CTkLabel(info, text=name, font=("Inter", 20, "bold"), text_color="#0F172A").pack(anchor="w")
         ctk.CTkLabel(info, text="TEACHER - Data Science & AI", font=("Inter", 12), text_color="#64748B").pack(anchor="w")
@@ -109,9 +112,7 @@ class ProfilePage(ctk.CTkFrame):
         self._add_field(grid, 1, 0, "DEPARTMENT", "Data Science & AI", "🏢")
         self._add_field(grid, 1, 1, "PRIMARY ROLE", "Teacher", "🛡️")
         
-        # Update Link
-        link = ctk.CTkLabel(card, text="Update Information ✏️", font=("Inter", 12, "underline"), text_color="#3B82F6", cursor="hand2")
-        link.pack(anchor="w", padx=20, pady=(0, 20))
+        # Note: "Update Information" removed as requested.
 
     def _add_field(self, parent, row, col, label, value, icon):
         f = ctk.CTkFrame(parent, fg_color="transparent")
@@ -137,7 +138,10 @@ class ProfilePage(ctk.CTkFrame):
         ctk.CTkLabel(text1, text="Change Password", font=("Inter", 12, "bold"), text_color="#0F172A").pack(anchor="w")
         ctk.CTkLabel(text1, text="Last changed 3 months ago", font=("Inter", 10), text_color="#94A3B8").pack(anchor="w")
         
-        ctk.CTkLabel(item1, text="✏️", font=("Arial", 12), text_color="#94A3B8").pack(side="right")
+        # Update button icon to be clickable
+        edit_btn = ctk.CTkLabel(item1, text="✏️", font=("Arial", 12), text_color="#94A3B8", cursor="hand2")
+        edit_btn.pack(side="right")
+        edit_btn.bind("<Button-1>", self._on_password_click)
         
         # 2FA
         item2 = ctk.CTkFrame(card, fg_color="transparent")
@@ -153,6 +157,29 @@ class ProfilePage(ctk.CTkFrame):
         switch = ctk.CTkSwitch(item2, text="", onvalue=True, offvalue=False, button_color="#10B981")
         switch.select()
         switch.pack(side="right")
+
+    def _on_password_click(self, event):
+        if not self.controller:
+            messagebox.showerror("Error", "Controller not connected")
+            return
+            
+        ChangePasswordModal(self, self._handle_change_password)
+
+    def _handle_change_password(self, old_pass, new_pass):
+        teacher_id = getattr(self.teacher, 'user_id', None)
+        # If user_id not on teacher object, might be from base User
+        if not teacher_id and hasattr(self.teacher, 'id'): teacher_id = self.teacher.id
+        
+        result = self.controller.handle_change_password(
+            teacher_id, 
+            old_pass,
+            new_pass
+        )
+        
+        if result["success"]:
+            messagebox.showinfo("Success", result["message"])
+        else:
+            messagebox.showerror("Error", result["message"])
 
     def _create_quick_settings(self, parent):
         card = ctk.CTkFrame(parent, fg_color="white", corner_radius=15, border_width=1, border_color="#E2E8F0")
