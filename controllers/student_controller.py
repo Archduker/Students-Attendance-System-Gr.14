@@ -153,6 +153,53 @@ class StudentController:
         # VD: Mã sinh viên phải có độ dài 5-15 ký tự
         code = student_code.strip()
         return 5 <= len(code) <= 15
+
+    def handle_get_todays_sessions(self, student_code: str) -> Dict[str, Any]:
+        """
+        Get today's sessions for the student.
+        """
+        if not student_code or not student_code.strip():
+            return {
+                "success": False,
+                "error": "Mã sinh viên không hợp lệ"
+            }
+        
+        try:
+            sessions = self.student_service.get_todays_sessions(student_code.strip())
+            return {
+                "success": True,
+                "data": sessions
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Lỗi khi tải danh sách buổi học: {str(e)}"
+            }
+
+    def handle_submit_attendance(
+        self,
+        student_code: str,
+        session_id: str,
+        verification_data: str
+    ) -> Dict[str, Any]:
+        """
+        Submit attendance for a session.
+        """
+        if not student_code or not student_code.strip():
+            return {"success": False, "message": "Mã sinh viên không hợp lệ"}
+            
+        if not session_id or not session_id.strip():
+            return {"success": False, "message": "Session ID không hợp lệ"}
+
+        try:
+            success, message = self.student_service.submit_attendance(
+                student_code.strip(),
+                session_id.strip(),
+                verification_data
+            )
+            return {"success": success, "message": message}
+        except Exception as e:
+            return {"success": False, "message": f"Lỗi hệ thống: {str(e)}"}
     
     def handle_qr_attendance(
         self,
