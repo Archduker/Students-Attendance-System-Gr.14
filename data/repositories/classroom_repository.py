@@ -27,11 +27,12 @@ class ClassroomRepository(BaseRepository[Classroom]):
     
     def _row_to_entity(self, row) -> Classroom:
         """Chuyển đổi row thành Classroom."""
+        # sqlite3.Row supports dict-style access but not .get()
         return Classroom(
             class_id=row["class_id"],
             class_name=row["class_name"],
             subject_code=row["subject_code"],
-            teacher_code=row["teacher_code"],
+            teacher_code=row["teacher_code"] if "teacher_code" in row.keys() else None
         )
     
     def _entity_to_dict(self, entity: Classroom) -> Dict[str, Any]:
@@ -42,6 +43,20 @@ class ClassroomRepository(BaseRepository[Classroom]):
             "subject_code": entity.subject_code,
             "teacher_code": entity.teacher_code,
         }
+    
+    def find_by_id(self, class_id: str) -> Optional[Classroom]:
+        """
+        Override find_by_id to use class_id instead of id.
+        
+        Args:
+            class_id: Class ID
+            
+        Returns:
+            Classroom object or None
+        """
+        query = f"SELECT * FROM {self.table_name} WHERE class_id = ?"
+        row = self.db.fetch_one(query, (class_id,))
+        return self._row_to_entity(row) if row else None
     
     def find_by_teacher(self, teacher_code: str) -> List[Classroom]:
         """

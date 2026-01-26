@@ -365,3 +365,142 @@ class StudentController:
         # VD: Mã sinh viên phải có độ dài 5-15 ký tự
         code = student_code.strip()
         return 5 <= len(code) <= 15
+    
+    def handle_qr_attendance(
+        self,
+        student_code: str,
+        qr_data: str
+    ) -> Dict[str, Any]:
+        """
+        Xử lý điểm danh qua QR code.
+        
+        Args:
+            student_code: Mã sinh viên
+            qr_data: Dữ liệu từ QR code (format: session_id|token|timestamp)
+            
+        Returns:
+            Dict với keys: success, message
+            
+        Example:
+            >>> qr_data = "SESSION123|TOKEN456|1640000000"
+            >>> result = controller.handle_qr_attendance("SV001", qr_data)
+        """
+        # Validate student code
+        if not student_code or not student_code.strip():
+            return {
+                "success": False,
+                "message": "Mã sinh viên không hợp lệ"
+            }
+        
+        # Parse QR data
+        try:
+            parts = qr_data.split("|")
+            if len(parts) != 3:
+                return {
+                    "success": False,
+                    "message": "QR code không đúng định dạng"
+                }
+            
+            session_id, token, timestamp_str = parts
+            
+            # Validate timestamp (QR không quá cũ - max 60 giây)
+            try:
+                from datetime import datetime
+                qr_timestamp = int(timestamp_str)
+                current_timestamp = int(datetime.now().timestamp())
+                
+                if current_timestamp - qr_timestamp > 60:
+                    return {
+                        "success": False,
+                        "message": "QR code đã hết hạn (quá 60 giây)"
+                    }
+            except ValueError:
+                return {
+                    "success": False,
+                    "message": "QR code có timestamp không hợp lệ"
+                }
+            
+            # Submit attendance with QR verification
+            return self.handle_submit_attendance(
+                student_code.strip(),
+                session_id.strip(),
+                verification_data=token
+            )
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Lỗi khi xử lý QR code: {str(e)}"
+            }
+    
+    def handle_code_attendance(
+        self,
+        student_code: str,
+        secret_code: str
+    ) -> Dict[str, Any]:
+        """
+        Xử lý điểm danh qua secret code.
+        
+        Args:
+            student_code: Mã sinh viên
+            secret_code: Mã bí mật từ giáo viên
+            
+        Returns:
+            Dict với keys: success, message
+            
+        Example:
+            >>> result = controller.handle_code_attendance("SV001", "ABC123")
+        """
+        # Validate inputs
+        if not student_code or not student_code.strip():
+            return {
+                "success": False,
+                "message": "Mã sinh viên không hợp lệ"
+            }
+        
+        if not secret_code or not secret_code.strip():
+            return {
+                "success": False,
+                "message": "Mã bí mật không được để trống"
+            }
+        
+        try:
+            # Tìm session với token matching
+            # (Cần access session repository để find by token)
+            # Tạm thời giả sử token = verification_data
+            
+            # Note: Đoạn này cần session repository để tìm session_id từ token
+            # Hiện tại sẽ trả về lỗi nếu không tìm thấy
+            
+            # Workaround: Try to submit với assumption rằng secret_code có thể là session_id hoặc token
+            # Real implementation cần query database
+            
+            # For now, return generic message
+            return {
+                "success": False,
+                "message": "Chức năng secret code cần được tích hợp với session repository. "
+                          "Vui lòng sử dụng QR code hoặc liên hệ giáo viên."
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Lỗi hệ thống: {str(e)}"
+            }
+    
+    def find_active_session_by_token(self, token: str) -> Optional[str]:
+        """
+        Tìm session_id từ token (cần session repository).
+        
+        Note: Method này cần được implement khi có session repository.
+        
+        Args:
+            token: Token/secret code
+            
+        Returns:
+            session_id nếu tìm thấy, None nếu không
+        """
+        # TODO: Implement with session repository
+        # session_repo.find_by_token(token)
+        return None
+

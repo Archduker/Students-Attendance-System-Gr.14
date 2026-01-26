@@ -279,3 +279,119 @@ class TeacherController:
         # TODO: Implement export functionality
         # For now, return placeholder
         return False, "Chức năng export đang được phát triển", None
+    
+    def handle_generate_qr_code(
+        self,
+        teacher: Teacher,
+        class_id: str,
+        session_id: Optional[str] = None
+    ) -> Dict:
+        """
+        Generate QR code cho attendance session.
+        
+        Args:
+            teacher: Teacher object
+            class_id: Mã lớp học
+            session_id: Session ID (optional, nếu muốn dùng session cụ thể)
+            
+        Returns:
+            Dict với keys:
+                - success: bool
+                - qr_image: PIL Image (nếu success)
+                - session_data: Dict (session info)
+                - message: str (nếu error)
+        """
+        # Verify teacher has access to this class
+        classroom = self.classroom_repo.find_by_id(class_id)
+        
+        if not classroom:
+            return {
+                "success": False,
+                "message": "Lớp học không tồn tại"
+            }
+        
+        if classroom.teacher_code != teacher.teacher_code:
+            return {
+                "success": False,
+                "message": "Bạn không được phân công giảng dạy lớp này"
+            }
+        
+        # Get or create active session
+        session = None
+        
+        if session_id:
+            # Use existing session
+            session = self.session_service.get_session_details(session_id)
+            if not session or session.class_id != class_id:
+                return {
+                    "success": False,
+                    "message": "Session không hợp lệ"
+                }
+        else:
+            # Try to find active session for this class
+            sessions = self.session_service.get_sessions_by_class(class_id)
+            active_sessions = [s for s in sessions if s.is_open()]
+            
+            if active_sessions:
+                # Use first active session
+                session = active_sessions[0]
+            else:
+                # Create new session with default settings
+                from datetime import datetime, timedelta
+                start_time = datetime.now()
+                end_time = start_time + timedelta(hours=2)
+                
+                success, message, new_session = self.session_service.create_session(
+                    class_id,
+                    start_time,
+                    end_time,
+                    AttendanceMethod.QR,
+                    qr_window_minutes=1,
+                    late_window_minutes=15
+                )
+                
+                if not success:
+                    return {
+                        "success": False,
+                        "message": f"Không thể tạo session: {message}"
+                    }
+                
+                session = new_session
+        
+        # Generate QR code
+        try:
+            from services.qr_service import QRService
+            from services.security_service import SecurityService
+            
+            qr_service = QRService(SecurityService())
+            
+            # Generate QR with session data
+            qr_image, token = qr_service.generate_attendance_qr(
+                session.session_id,
+                validity_seconds=60
+            )
+            
+            # Prepare session data for UI
+            session_data = {
+                "session_id": session.session_id,
+                "secret_code": token,  # Use the token from QR generation
+                "status": session.status.value if hasattr(session.status, 'value') else str(session.status),
+                "start_time": session.start_time,
+                "end_time": session.end_time,
+                "class_name": classroom.class_name
+            }
+            
+            print(f"✅ Generated secret code: {token}")  # Debug
+            
+            return {
+                "success": True,
+                "qr_image": qr_image,
+                "session_data": session_data
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Lỗi khi tạo QR code: {str(e)}"
+            }
+

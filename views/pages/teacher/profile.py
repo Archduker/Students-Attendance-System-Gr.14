@@ -18,6 +18,7 @@ class ProfilePage(ctk.CTkFrame):
     
     def __init__(self, parent, teacher: Teacher = None):
         super().__init__(parent, fg_color="transparent")
+        self.pack(expand=True, fill="both")
         self.teacher = teacher
         
         # Grid layout: Main (Left) + Sidebar (Right)
@@ -51,8 +52,14 @@ class ProfilePage(ctk.CTkFrame):
         content.pack(padx=30, pady=30, fill="x")
         
         # Avatar (Large)
+        # Get initials from user name
+        if self.teacher and self.teacher.full_name:
+            initials = "".join([word[0].upper() for word in self.teacher.full_name.split()[:2]])
+        else:
+            initials = "TC"  # Teacher default
+            
         avatar = ctk.CTkLabel(
-            content, text="PT", width=80, height=80, corner_radius=40,
+            content, text=initials, width=80, height=80, corner_radius=40,
             fg_color="#D1FAE5", text_color="#10B981", font=("Inter", 24, "bold") # Greenish
         )
         avatar.pack(side="left", padx=(0, 20))
@@ -61,7 +68,8 @@ class ProfilePage(ctk.CTkFrame):
         info = ctk.CTkFrame(content, fg_color="transparent")
         info.pack(side="left")
         
-        name = "Nguyen Phuong Tram" # Mock or use self.teacher.full_name
+        # Use dynamic user data
+        name = self.teacher.full_name if self.teacher else "Teacher"
         ctk.CTkLabel(info, text=name, font=("Inter", 20, "bold"), text_color="#0F172A").pack(anchor="w")
         ctk.CTkLabel(info, text="TEACHER - Data Science & AI", font=("Inter", 12), text_color="#64748B").pack(anchor="w")
         
@@ -92,8 +100,12 @@ class ProfilePage(ctk.CTkFrame):
         grid.grid_columnconfigure(0, weight=1)
         grid.grid_columnconfigure(1, weight=1)
         
-        self._add_field(grid, 0, 0, "FULL NAME", "Nguyen Phuong Tram", "👤")
-        self._add_field(grid, 0, 1, "EMAIL ADDRESS", "tramnp9692@ut.edu.vn", "✉️")
+        # Use dynamic user data
+        name = self.teacher.full_name if self.teacher else "Teacher"
+        email = self.teacher.email if self.teacher else "teacher@ut.edu.vn"
+        
+        self._add_field(grid, 0, 0, "FULL NAME", name, "👤")
+        self._add_field(grid, 0, 1, "EMAIL ADDRESS", email, "✉️")
         self._add_field(grid, 1, 0, "DEPARTMENT", "Data Science & AI", "🏢")
         self._add_field(grid, 1, 1, "PRIMARY ROLE", "Teacher", "🛡️")
         

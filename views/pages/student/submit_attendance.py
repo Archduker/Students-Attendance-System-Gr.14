@@ -1,3 +1,14 @@
+"""
+Submit Attendance Page - Student Attendance Submission
+======================================================
+
+Trang cho phép sinh viên submit điểm danh qua:
+1. Scan QR Code (camera hoặc upload ảnh)
+2. Enter Secret Code (mã bí mật)
+
+Author: Group 14
+"""
+
 import customtkinter as ctk
 from views.styles.theme import COLORS, FONTS
 from views.pages.student.qr_scan_modal import QRScanModal
@@ -7,6 +18,7 @@ from tkinter import messagebox
 class SubmitAttendancePage(ctk.CTkFrame):
     def __init__(self, master, on_navigate=None, user=None, student_service=None, student_controller=None):
         super().__init__(master, fg_color="#F3F4F6") # Light gray bg like layout
+
         self.pack(expand=True, fill="both")
         
         self.on_navigate = on_navigate
@@ -75,7 +87,6 @@ class SubmitAttendancePage(ctk.CTkFrame):
     def _create_card(self, parent, title, desc, icon, icon_color, bg_icon, command):
         card = ctk.CTkButton(
             parent,
-            text="",
             fg_color="white",
             hover_color="#F8FAFC",
             width=300,
@@ -192,3 +203,4 @@ class SubmitAttendancePage(ctk.CTkFrame):
         else:
             messagebox.showerror("Failed", result["message"])
             self.status_label.configure(text=f"❌ {result['message']}", text_color=COLORS["error"])
+

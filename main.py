@@ -164,6 +164,7 @@ def run_gui(app_config: dict):
             if current_page[0]:
                 current_page[0].destroy()
             
+
             # Initialize student controller dependencies
             from controllers.student_controller import StudentController
             from services.student_service import StudentService
@@ -172,7 +173,6 @@ def run_gui(app_config: dict):
             # Get database and repos
             db = app_config["db"]
             user_repo = app_config["repositories"]["user"]
-            
             # Initialize repositories
             record_repo = AttendanceRecordRepository(db)
             session_repo = AttendanceSessionRepository(db)

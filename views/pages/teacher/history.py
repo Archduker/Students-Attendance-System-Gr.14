@@ -18,6 +18,7 @@ class HistoryPage(ctk.CTkFrame):
     
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
+        self.pack(expand=True, fill="both")
         
         # Grid layout
         self.grid_columnconfigure(0, weight=1)
