@@ -70,6 +70,24 @@ class AttendanceSessionRepository(BaseRepository[AttendanceSession]):
         row = self.db.fetch_one(query, (session_id,))
         return self._row_to_entity(row) if row else None
     
+    def delete(self, session_id: str) -> bool:
+        """
+        Override delete to use session_id instead of id.
+        
+        Args:
+            session_id: Session ID to delete
+            
+        Returns:
+            True if deletion was successful
+        """
+        # First, delete all attendance records for this session
+        self.db.execute("DELETE FROM attendance_records WHERE session_id = ?", (session_id,))
+        
+        # Then delete the session itself
+        query = f"DELETE FROM {self.table_name} WHERE session_id = ?"
+        cursor = self.db.execute(query, (session_id,))
+        return cursor.rowcount > 0
+    
     def find_by_class(self, class_id: str) -> List[AttendanceSession]:
         """Lấy tất cả sessions của một lớp."""
         query = f"SELECT * FROM {self.table_name} WHERE class_id = ? ORDER BY start_time DESC"

@@ -217,6 +217,20 @@ class UserRepository(BaseRepository[User]):
         query = f"SELECT * FROM {self.table_name} WHERE user_id = ?"
         row = self.db.fetch_one(query, (user_id,))
         return self._row_to_entity(row) if row else None
+    
+    def delete(self, user_id: int) -> bool:
+        """
+        Override delete to use user_id instead of id.
+        
+        Args:
+            user_id: User ID to delete
+            
+        Returns:
+            True if deletion was successful
+        """
+        query = f"DELETE FROM {self.table_name} WHERE user_id = ?"
+        cursor = self.db.execute(query, (user_id,))
+        return cursor.rowcount > 0
 
     def update_student_profile(self, student_code: str, data: Dict[str, Any]) -> bool:
         """

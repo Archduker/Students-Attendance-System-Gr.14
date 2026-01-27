@@ -77,6 +77,24 @@ class ClassroomRepository(BaseRepository[Classroom]):
         
         return entity
     
+    def delete(self, class_id: str) -> bool:
+        """
+        Override delete to use class_id instead of id.
+        
+        Args:
+            class_id: Class ID to delete
+            
+        Returns:
+            True if deletion was successful
+        """
+        # First, delete all students associated with this class
+        self.db.execute("DELETE FROM classes_student WHERE class_id = ?", (class_id,))
+        
+        # Then delete the class itself
+        query = f"DELETE FROM {self.table_name} WHERE class_id = ?"
+        cursor = self.db.execute(query, (class_id,))
+        return cursor.rowcount > 0
+    
     def find_by_teacher(self, teacher_code: str) -> List[Classroom]:
         """
         Lấy các lớp của một giáo viên.

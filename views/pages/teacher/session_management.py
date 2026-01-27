@@ -36,6 +36,9 @@ class SessionManagementPage(ctk.CTkFrame):
         
         self._setup_ui()
         self._load_real_data()
+        
+        # Start auto-refresh loop (30 seconds)
+        self.after(30000, self._auto_refresh_loop)
 
     def _load_real_data(self):
         """Fetch real data from database"""
@@ -73,15 +76,34 @@ class SessionManagementPage(ctk.CTkFrame):
                     "raw_session": s # Store raw object for actions
                 })
                 
-            self._render_session_list()
+            # Only render if in history state (auto-refresh will call this from loop)
+            if self.current_state == "history":
+                self._render_session_list()
             
         except Exception as e:
-            print(f"Error loading real data: {e}")
+            print(f"❌ Error loading real data: {e}")
+            import traceback
+            traceback.print_exc()
 
-            self._render_session_list()
+    def _auto_refresh_loop(self):
+        """Auto-refresh data every 30 seconds"""
+        if self.winfo_exists():
+            try:
+                print(f"🔄 Auto-refreshing session data...")
+                self._load_real_data()
+                
+                # Re-render UI based on current state
+                if self.current_state == "history":
+                    print(f"📋 Rendering history state...")
+                    self._render_session_list()
+                
+            except Exception as e:
+                print(f"❌ Error in auto-refresh: {e}")
+                import traceback
+                traceback.print_exc()
             
-        except Exception as e:
-            print(f"Error loading real data: {e}")
+            # Schedule next refresh
+            self.after(30000, self._auto_refresh_loop)
 
     def refresh_data(self):
         """Public method to refresh session data (called from CreateSessionDialog callback)"""

@@ -84,9 +84,10 @@ class StudentService:
         attendance_rate = (present_count / total_sessions * 100) if total_sessions > 0 else 0
         
         # Lấy 5 bản ghi gần nhất
+        # Sort by attendance_time (handle None values by treating them as oldest)
         recent_records = sorted(
             records, 
-            key=lambda r: r.attendance_time, 
+            key=lambda r: r.attendance_time if r.attendance_time else datetime.min, 
             reverse=True
         )[:5]
         
@@ -129,36 +130,56 @@ class StudentService:
         Returns:
             List các session trong ngày
         """
-        # Get classes for student
-        classes = self.class_repo.get_classes_for_student(student_code)
-        
-        today = datetime.now().date()
-        sessions_today = []
-        
-        for cls in classes:
-            # Find active sessions for this class
-            # Note: This finds all sessions, we filter for today
-            all_sessions = self.attendance_session_repo.find_by_class(cls.class_id)
+        try:
+            # Get classes for student
+            classes = self.class_repo.get_classes_for_student(student_code)
             
-            for session in all_sessions:
-                if session.start_time.date() == today:
-                    sessions_today.append({
-                        "session_id": session.session_id,
-                        "class_id": cls.class_id,
-                        "class_name": cls.class_name,
-                        "subject_code": cls.subject_code,
-                        "start_time": session.start_time.strftime("%H:%M"),
-                        "end_time": session.end_time.strftime("%H:%M"),
-                        "raw_start_time": session.start_time, # For sorting
-                        "room": "Online" if session.method == AttendanceMethod.LINK_TOKEN else "TBA",
-                        "status": session.status.value,
-                        "method": session.method.value,
-                        "is_active": session.status.value == "OPEN"
-                    })
-        
-        # Sort by start time
-        sessions_today.sort(key=lambda x: x["raw_start_time"])
-        return sessions_today
+            today = datetime.now().date()
+            sessions_today = []
+            
+            for cls in classes:
+                # Find active sessions for this class
+                # Note: This finds all sessions, we filter for today
+                all_sessions = self.attendance_session_repo.find_by_class(cls.class_id)
+                
+                for session in all_sessions:
+                    # Ensure start_time is a datetime object
+                    session_start_time = session.start_time
+                    if isinstance(session_start_time, str):
+                        session_start_time = datetime.fromisoformat(session_start_time)
+                    
+                    session_end_time = session.end_time
+                    if isinstance(session_end_time, str):
+                        session_end_time = datetime.fromisoformat(session_end_time)
+                    
+                    # Check if session is today
+                    if session_start_time.date() == today:
+                        # Determine room based on method
+                        method_val = session.method.value if hasattr(session.method, 'value') else str(session.method)
+                        room = "Online" if method_val == "LINK_TOKEN" else "TBA"
+                        
+                        sessions_today.append({
+                            "session_id": session.session_id,
+                            "class_id": cls.class_id,
+                            "class_name": cls.class_name,
+                            "subject_code": cls.subject_code,
+                            "start_time": session_start_time.strftime("%H:%M"),
+                            "end_time": session_end_time.strftime("%H:%M"),
+                            "raw_start_time": session_start_time, # For sorting
+                            "room": room,
+                            "status": session.status.value if hasattr(session.status, 'value') else str(session.status),
+                            "method": method_val,
+                            "is_active": (session.status.value if hasattr(session.status, 'value') else str(session.status)) == "OPEN"
+                        })
+            
+            # Sort by start time
+            sessions_today.sort(key=lambda x: x["raw_start_time"])
+            return sessions_today
+        except Exception as e:
+            print(f"❌ Error in get_todays_sessions: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
     
     def submit_attendance(
         self, 
@@ -415,14 +436,28 @@ class StudentService:
         # Lấy session info
         session = self.attendance_session_repo.find_by_id(record.session_id)
         
+        # Ensure attendance_time is properly formatted
+        if record.attendance_time:
+            if isinstance(record.attendance_time, str):
+                att_time = datetime.fromisoformat(record.attendance_time)
+            else:
+                att_time = record.attendance_time
+            date_str = att_time.strftime("%Y-%m-%d")
+            time_str = att_time.strftime("%H:%M:%S")
+        else:
+            # For absent records, use current date
+            now = datetime.now()
+            date_str = now.strftime("%Y-%m-%d")
+            time_str = now.strftime("%H:%M:%S")
+        
         return {
             "record_id": record.record_id,
             "session_id": record.session_id,
             "class_id": session.class_id if session else None,
             "class_name": self._get_class_name(session.class_id) if session else None,
-            "date": record.attendance_time.strftime("%Y-%m-%d"),
-            "time": record.attendance_time.strftime("%H:%M:%S"),
-            "status": record.status.value,
+            "date": date_str,
+            "time": time_str,
+            "status": record.status.value if hasattr(record.status, 'value') else str(record.status),
             "remark": record.remark or ""
         }
     

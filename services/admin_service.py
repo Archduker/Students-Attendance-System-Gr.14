@@ -457,18 +457,29 @@ class AdminService:
             Tuple (success, message)
         """
         try:
+            print(f"📝 Deleting class: {class_id}")
+            
             classroom = self.classroom_repo.find_by_id(class_id)
             if not classroom:
+                print(f"❌ Class not found: {class_id}")
                 return False, "Class not found"
+            
+            print(f"🗑️  Removing all students from class {class_id}")
+            # Note: The repository.delete() handles cascading delete for students
             
             success = self.classroom_repo.delete(class_id)
             
             if success:
+                print(f"✅ Class deleted successfully: {class_id}")
                 return True, "Class deleted successfully"
             else:
+                print(f"❌ Failed to delete class: {class_id}")
                 return False, "Failed to delete class"
                 
         except Exception as e:
+            print(f"❌ Error deleting class {class_id}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return False, f"Error deleting class: {str(e)}"
     
     def add_student_to_class(self, class_id: str, student_code: str) -> Tuple[bool, str]:

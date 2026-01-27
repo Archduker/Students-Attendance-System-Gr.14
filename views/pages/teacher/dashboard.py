@@ -34,6 +34,9 @@ class TeacherDashboardPage(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         
         self._setup_ui()
+        
+        # Start auto-refresh loop (60 seconds)
+        self.after(60000, self._auto_refresh_loop)
     
     def _setup_ui(self):
         """Setup UI components"""
@@ -55,6 +58,31 @@ class TeacherDashboardPage(ctk.CTkFrame):
         
         # --- Right Column: Class Roadmap ---
         self._create_roadmap_panel(self)
+    
+    def _auto_refresh_loop(self):
+        """Auto-refresh dashboard stats every 60 seconds"""
+        if self.winfo_exists():
+            try:
+                print(f"🔄 Auto-refreshing teacher dashboard...")
+                # Re-fetch stats
+                self.stats = self.controller.get_dashboard_stats(self.teacher)
+                # Re-render UI (simple approach: re-create cards and chart)
+                self._update_stats_display()
+            except Exception as e:
+                print(f"❌ Error in auto-refresh: {e}")
+            # Schedule next refresh
+            self.after(60000, self._auto_refresh_loop)
+    
+    def _update_stats_display(self):
+        """Update stats cards and chart with new data"""
+        try:
+            # Clear and re-create stats cards
+            for widget in self.left_col.winfo_children():
+                if hasattr(widget, '_card_type') and widget._card_type == 'stats':
+                    widget.destroy()
+            self._create_stats_cards(self.left_col)
+        except Exception as e:
+            print(f"Error updating stats display: {e}")
     
     def _create_header(self, parent):
         """Create Faculty Load header"""

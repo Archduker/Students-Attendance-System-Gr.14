@@ -31,6 +31,9 @@ class HistoryPage(ctk.CTkFrame):
         
         self._setup_ui()
         self._load_real_data()
+        
+        # Start auto-refresh loop (30 seconds)
+        self.after(30000, self._auto_refresh_loop)
 
     def _load_real_data(self):
         """Fetch real sessions from DB"""
@@ -68,6 +71,17 @@ class HistoryPage(ctk.CTkFrame):
                 
         except Exception as e:
             print(f"Error loading history: {e}")
+    
+    def _auto_refresh_loop(self):
+        """Auto-refresh history data every 30 seconds"""
+        if self.winfo_exists():
+            try:
+                print(f"🔄 Auto-refreshing teacher history...")
+                self._load_real_data()
+            except Exception as e:
+                print(f"❌ Error in auto-refresh: {e}")
+            # Schedule next refresh
+            self.after(30000, self._auto_refresh_loop)
 
     def _setup_ui(self):
         # 1. Header
