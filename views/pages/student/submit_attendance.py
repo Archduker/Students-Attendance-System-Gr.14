@@ -200,6 +200,10 @@ class SubmitAttendancePage(ctk.CTkFrame):
         if result["success"]:
             messagebox.showinfo("Success", result["message"])
             self.status_label.configure(text=f"✅ {result['message']}", text_color=COLORS["success"])
+            
+            # Navigate back to dashboard immediately to refresh data
+            # Use after(100) to ensure UI updates first before navigation
+            self.after(100, lambda: self.on_navigate("dashboard") if self.on_navigate else None)
         else:
             messagebox.showerror("Failed", result["message"])
             self.status_label.configure(text=f"❌ {result['message']}", text_color=COLORS["error"])

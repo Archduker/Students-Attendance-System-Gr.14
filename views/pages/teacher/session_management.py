@@ -14,6 +14,7 @@ from datetime import datetime
 from core.models import Teacher
 from controllers.teacher_controller import TeacherController
 from views.components.modal import Modal
+from views.pages.teacher.create_session import CreateSessionDialog
 
 
 class SessionManagementPage(ctk.CTkFrame):
@@ -82,6 +83,13 @@ class SessionManagementPage(ctk.CTkFrame):
         except Exception as e:
             print(f"Error loading real data: {e}")
 
+    def refresh_data(self):
+        """Public method to refresh session data (called from CreateSessionDialog callback)"""
+        self.selected_session_idx = None  # Reset selection
+        self._load_real_data()
+        if self.current_state == "history":
+            self._render_session_list()
+
     def _setup_ui(self):
         """Setup UI components"""
         # Header (chung cho cả 2 states)
@@ -101,7 +109,7 @@ class SessionManagementPage(ctk.CTkFrame):
         
         # Left side: Title & Subtitle
         title_area = ctk.CTkFrame(header_frame, fg_color="transparent")
-        title_area.pack(side="left")
+        title_area.pack(side="left", fill="x", expand=True)
         
         ctk.CTkLabel(
             title_area,
@@ -117,9 +125,22 @@ class SessionManagementPage(ctk.CTkFrame):
             text_color="#94A3B8"
         ).pack(anchor="w", pady=(2, 0))
         
-        # Right side: Tab Switcher
+        # Right side: Tab Switcher + Create Button
         tab_area = ctk.CTkFrame(header_frame, fg_color="transparent")
         tab_area.pack(side="right")
+        
+        # Create Session Button
+        ctk.CTkButton(
+            tab_area,
+            text="+ Create Session",
+            fg_color="#6366F1",
+            text_color="white",
+            font=("Inter", 11, "bold"),
+            height=36,
+            corner_radius=18,
+            hover_color="#4F46E5",
+            command=self._open_create_session_dialog
+        ).pack(side="left", padx=(0, 12))
         
         # History Tab
         self.history_tab = ctk.CTkButton(
@@ -172,6 +193,16 @@ class SessionManagementPage(ctk.CTkFrame):
         
         # Re-render content
         self._render_current_state()
+    
+    def _open_create_session_dialog(self):
+        """Open Create Session dialog with callback to refresh data"""
+        dialog = CreateSessionDialog(
+            self.winfo_toplevel(),
+            self.teacher,
+            self.controller,
+            on_success=self.refresh_data
+        )
+        self.winfo_toplevel().wait_window(dialog)
     
     def _render_current_state(self):
         """Render UI theo state hiện tại"""

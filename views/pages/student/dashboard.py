@@ -138,18 +138,25 @@ class StudentDashboard(ctk.CTkFrame):
 
     def refresh_dashboard(self):
         """Fetch data and update UI."""
+        print(f"DEBUG: refresh_dashboard called for student: {self.student_code}")
+        
         if not self.student_service:
+            print("❌ ERROR: student_service is None!")
             # Show empty/demo state if service not injected (fallback)
             self._update_stats_demo()
             return
             
         try:
+            print(f"📊 Fetching dashboard stats for {self.student_code}...")
             # Fetch Data
             # 1. Stats & Recent Log
             stats = self.student_service.get_dashboard_stats(self.student_code)
+            print(f"✅ Stats retrieved: {stats}")
             
             # 2. Today's Sessions
+            print(f"📅 Fetching today's sessions...")
             todays_sessions = self.student_service.get_todays_sessions(self.student_code)
+            print(f"✅ Sessions retrieved: {len(todays_sessions)} sessions")
             
             # Update UI
             self._update_stats(stats)
@@ -157,20 +164,30 @@ class StudentDashboard(ctk.CTkFrame):
             self._update_log(stats.get("recent_attendance", []))
             
         except Exception as e:
-            print(f"Error refreshing dashboard: {e}")
+            print(f"❌ Error refreshing dashboard: {e}")
+            import traceback
+            traceback.print_exc()
             # Could show error toast here
 
     def _update_stats(self, stats):
         # Clear old stats
         for widget in self.stats_container.winfo_children():
             widget.destroy()
-            
+        
+        # Safe dictionary access with defaults
+        attendance_rate = stats.get('attendance_rate', 0) if stats else 0
+        total_sessions = stats.get('total_sessions', 0) if stats else 0
+        present_count = stats.get('present_count', 0) if stats else 0
+        absent_count = stats.get('absent_count', 0) if stats else 0
+        
+        print(f"📊 Updating stats - Rate: {attendance_rate}%, Total: {total_sessions}, Present: {present_count}, Absent: {absent_count}")
+        
         # Data preparation
         items = [
-            ("ATTENDANCE", f"{stats.get('attendance_rate', 0)}%", "✅", COLORS["success"]),
-            ("TOTAL SESSIONS", str(stats.get('total_sessions', 0)), "📚", COLORS["purple"]),
-            ("PRESENT", str(stats.get('present_count', 0)), "✅", COLORS["success"]),
-            ("ABSENT", str(stats.get('absent_count', 0)), "❌", COLORS["error"])
+            ("ATTENDANCE", f"{attendance_rate}%", "✅", COLORS["success"]),
+            ("TOTAL SESSIONS", str(total_sessions), "📚", COLORS["purple"]),
+            ("PRESENT", str(present_count), "✅", COLORS["success"]),
+            ("ABSENT", str(absent_count), "❌", COLORS["error"])
         ]
         
         for i, (label, val, icon, color) in enumerate(items):
@@ -206,10 +223,12 @@ class StudentDashboard(ctk.CTkFrame):
         ctk.CTkLabel(head, text="SEMESTER PLAN", font=FONTS["card_label"], text_color=COLORS["primary"]).pack(side="right")
         
         # Content
-        if not sessions:
+        if not sessions or sessions is None:
+            print(f"⚠️ No sessions to display: {sessions}")
             self._show_empty_state(self.schedule_frame, "No classes scheduled for today")
             return
-            
+        
+        print(f"📚 Displaying {len(sessions)} sessions for today")
         scroll = ctk.CTkScrollableFrame(self.schedule_frame, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=10, pady=(0, 15))
         
@@ -262,10 +281,12 @@ class StudentDashboard(ctk.CTkFrame):
         # Header
         ctk.CTkLabel(self.log_frame, text="VERIFICATION LOG", font=FONTS["section_title"], text_color=COLORS["success"]).pack(anchor="w", padx=25, pady=25)
         
-        if not logs:
+        # Handle None or empty logs
+        if not logs or logs is None:
+            print(f"⚠️ No logs to display: {logs}")
             self._show_empty_state(self.log_frame, "No attendance records yet", dark=True)
-            pass
         else:
+            print(f"📋 Displaying {len(logs)} log entries")
             scroll = ctk.CTkScrollableFrame(self.log_frame, fg_color="transparent")
             scroll.pack(fill="both", expand=True, padx=5, pady=(0, 20))
             

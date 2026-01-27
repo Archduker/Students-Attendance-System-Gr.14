@@ -133,10 +133,19 @@ class AttendanceSessionService:
         Returns:
             List of AttendanceSession
         """
-        # TODO: Filter by teacher's classes
-        # For now, return all sessions (should be filtered by teacher's assigned classes)
-        sessions = self.session_repo.find_all()
-        return sessions[:limit]
+        # Get teacher's classes
+        classes = self.classroom_repo.find_by_teacher(teacher_code)
+        class_ids = [c.class_id for c in classes]
+        
+        # Get all sessions for these classes
+        all_sessions = []
+        for class_id in class_ids:
+            sessions = self.session_repo.find_by_class(class_id)
+            all_sessions.extend(sessions)
+        
+        # Sort by start_time descending and limit
+        all_sessions.sort(key=lambda x: x.start_time, reverse=True)
+        return all_sessions[:limit]
     
     def get_sessions_by_class(self, class_id: str) -> List[AttendanceSession]:
         """

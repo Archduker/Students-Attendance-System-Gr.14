@@ -186,6 +186,8 @@ class StudentService:
             >>> if success:
             ...     print("Điểm danh thành công!")
         """
+        print(f"📝 Submit attendance: student={student_code}, session={session_id}")
+        
         # Kiểm tra session có tồn tại không
         session = self.attendance_session_repo.find_by_id(session_id)
         if not session:
@@ -233,12 +235,27 @@ class StudentService:
         )
         
         # Lưu vào database
-        success = self.attendance_record_repo.create(record)
-        
-        if success:
-            return True, "Điểm danh thành công!"
-        else:
-            return False, "Không thể lưu điểm danh, vui lòng thử lại"
+        try:
+            print(f"💾 Creating attendance record: {record.record_id}")
+            created_record = self.attendance_record_repo.create(record)
+            print(f"✅ Record created: {created_record}")
+            
+            # Verify record was actually saved by querying it back
+            verify_record = self.attendance_record_repo.find_by_session_and_student(
+                session_id, student_code
+            )
+            
+            if verify_record:
+                print(f"✅ Record verified in database: {verify_record.record_id}")
+                return True, "Điểm danh thành công!"
+            else:
+                print(f"❌ Record NOT found in database after create!")
+                return False, "Không thể xác nhận lưu điểm danh, vui lòng thử lại"
+        except Exception as e:
+            print(f"❌ Error saving attendance: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return False, f"Lỗi khi lưu điểm danh: {str(e)}"
     
     def get_attendance_history(
         self,

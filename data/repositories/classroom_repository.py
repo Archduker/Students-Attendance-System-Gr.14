@@ -58,6 +58,25 @@ class ClassroomRepository(BaseRepository[Classroom]):
         row = self.db.fetch_one(query, (class_id,))
         return self._row_to_entity(row) if row else None
     
+    def update(self, entity: Classroom) -> Classroom:
+        """
+        Override update to use class_id instead of id.
+        
+        Args:
+            entity: Classroom object to update
+            
+        Returns:
+            Updated Classroom object
+        """
+        data = self._entity_to_dict(entity)
+        class_id = data.pop("class_id")  # Remove class_id from data dict
+        set_clause = ", ".join([f"{k} = ?" for k in data.keys()])
+        
+        query = f"UPDATE {self.table_name} SET {set_clause} WHERE class_id = ?"
+        self.db.execute(query, (*data.values(), class_id))
+        
+        return entity
+    
     def find_by_teacher(self, teacher_code: str) -> List[Classroom]:
         """
         Lấy các lớp của một giáo viên.

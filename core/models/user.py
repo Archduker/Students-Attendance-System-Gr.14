@@ -70,6 +70,9 @@ class User:
             "role": self.role.value,
             "email": self.email,
             "created_at": self.created_at.isoformat(),
+            "admin_id": getattr(self, 'admin_id', None),
+            "teacher_code": getattr(self, 'teacher_code', None),
+            "student_code": getattr(self, 'student_code', None),
         }
 
 
