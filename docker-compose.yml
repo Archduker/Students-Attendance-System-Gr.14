@@ -1,12 +1,11 @@
 version: "3.9"
 
-
 services:
- attendance-app:
-   build: .
-   container_name: student-attendance
-   ports:
-     - "8501:8501"
-   volumes:
-     - ./database:/app/database
-     - ./data:/app/data
+  attendance-app:
+    build: .
+    container_name: student-attendance
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./database:/app/database
+      - ./data:/app/data
